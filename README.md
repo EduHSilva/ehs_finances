@@ -1,64 +1,39 @@
-# Nuxt Dashboard Template
+﻿# Finances
 
-[![Nuxt UI](https://img.shields.io/badge/Made%20with-Nuxt%20UI-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
+## Estrutura
 
-Get started with the Nuxt dashboard template with multiple pages, collapsible sidebar, keyboard shortcuts, light & dark more, command palette and more, powered by [Nuxt UI](https://ui.nuxt.com).
+- `web/` — aplicação Nuxt (todo o código web: `app/`, `i18n/`, config e assets).
+- `legacy/flutter/` — app Flutter legado, mantido como referência para a futura migração para Kotlin em `app/`.
+- `app/` — app Android Kotlin com Jetpack Compose.
+- `Dockerfile`, `docker-compose.yaml`, `docker-compose.prod.yml` e `docker/` — build e publicação em `/app/finances/`.
+- `.github/` — CI e publicação da imagem `finances-ui`.
 
-- [Live demo](https://dashboard-template.nuxt.dev/)
-- [Documentation](https://ui.nuxt.com/docs/getting-started/installation/nuxt)
-
-<a href="https://dashboard-template.nuxt.dev/" target="_blank">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://ui.nuxt.com/assets/templates/nuxt/dashboard-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://ui.nuxt.com/assets/templates/nuxt/dashboard-light.png">
-    <img alt="Nuxt Dashboard Template" src="https://ui.nuxt.com/assets/templates/nuxt/dashboard-light.png">
-  </picture>
-</a>
-
-> The dashboard template for Vue is on https://github.com/nuxt-ui-templates/dashboard-vue.
-
-## Quick Start
-
-```bash [Terminal]
-npm create nuxt@latest -- -t github:nuxt-ui-templates/dashboard
-```
-
-## Deploy your own
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-name=dashboard&repository-url=https%3A%2F%2Fgithub.com%2Fnuxt-ui-templates%2Fdashboard&demo-image=https%3A%2F%2Fui.nuxt.com%2Fassets%2Ftemplates%2Fnuxt%2Fdashboard-dark.png&demo-url=https%3A%2F%2Fdashboard-template.nuxt.dev%2F&demo-title=Nuxt%20Dashboard%20Template&demo-description=A%20dashboard%20template%20with%20multi-column%20layout%20for%20building%20sophisticated%20admin%20interfaces.)
-
-## Setup
-
-Make sure to install the dependencies:
+## Desenvolvimento web
 
 ```bash
+cd web
 pnpm install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
 pnpm dev
 ```
 
-## Production
+## Docker / deploy
 
-Build the application for production:
-
-```bash
-pnpm build
-```
-
-Locally preview production build:
+O web roda em um container nginx próprio e é publicado pelo nginx dos microservices em **`/app/finances/`**, sem publicar porta no host em produção. O compose local (`docker-compose.yaml`) permite build local; o compose de produção consome a imagem publicada no GHCR:
 
 ```bash
-pnpm preview
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+- A imagem do GitHub Actions é `ghcr.io/eduhsilva/finances-ui`, com tags `latest` e `<sha>`.
+- Para fixar uma versão, defina `IMAGE_TAG=<sha>`. Para substituir o endereço completo, defina `FINANCES_UI_IMAGE`.
+- A rede externa padrão em produção é `microservices_backend`, alinhada ao compose de produção de `study` e `admin`. Se necessário, defina `EHS_MICROSERVICES_NETWORK` com o nome existente da rede Docker.
+- O serviço publica internamente a porta 80 e usa o alias `finances-ui`; não há porta host publicada. A rota `/app/finances/` do nginx dos microservices deve encaminhar para `finances-ui:80`.
+- O build fixa o base path `/app/finances/` e usa API same-origin (`/users` e `/finances`) via gateway.
+- Não são necessários segredos no compose do front.
 
-## Renovate integration
+Rollback: execute novamente `pull` e `up -d` com `IMAGE_TAG` definido para a tag SHA anterior.
 
-Install [Renovate GitHub app](https://github.com/apps/renovate/installations/select_target) on your repository and you are good to go.
+## Documentação do produto
+
+O plano de evolução do web, do app Android e dos contratos necessários nos microservices está em [`todo.md`](todo.md).

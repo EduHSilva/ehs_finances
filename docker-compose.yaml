@@ -1,0 +1,32 @@
+# Sobe o Finances web conectado à rede do nginx dos microservices.
+#
+# Acesso: http://localhost/app/finances/
+#
+# Uso:
+#   docker compose up -d --build
+#   docker compose logs -f finances-ui
+
+services:
+  finances-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NUXT_APP_BASE_URL: /app/finances/
+        # Vazio = mesma origem; /finances e /users passam pelo gateway.
+        NUXT_PUBLIC_API_URL: ${FINANCES_PUBLIC_API_URL:-}
+    image: ${FINANCES_UI_IMAGE:-ehs_finances-ui:local}
+    container_name: finances-ui
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      default: {}
+      ehs_microservices:
+        aliases:
+          - finances-ui
+
+networks:
+  ehs_microservices:
+    external: true
+    name: ${EHS_MICROSERVICES_NETWORK:-ehs_microservices_default}
