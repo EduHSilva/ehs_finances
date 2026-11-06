@@ -21,10 +21,15 @@ const editingGoal = ref<MonthlyGoal | null>(null)
 const createSchema = z.object({
   title: z.string().trim().min(2),
   mode: z.enum(['FIXED', 'PERCENT_INCOME']),
-  amount: z.coerce.number().positive()
+  amount: z.coerce.number().positive(),
+  dtInicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  dtFim: z.union([z.literal(''), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)])
 }).refine(value => value.mode !== 'PERCENT_INCOME' || value.amount <= 100, {
   path: ['amount'],
   message: t('percentageMaximum')
+}).refine(value => !value.dtFim || value.dtFim >= value.dtInicio, {
+  path: ['dtFim'],
+  message: t('goalEndBeforeStart')
 })
 const contributionSchema = z.object({
   amount: z.coerce.number().positive(),
@@ -34,7 +39,7 @@ const contributionSchema = z.object({
 type CreateSchema = z.output<typeof createSchema>
 type ContributionSchema = z.output<typeof contributionSchema>
 
-const createState = reactive<Partial<CreateSchema>>({ title: '', mode: 'FIXED', amount: undefined })
+const createState = reactive<Partial<CreateSchema>>({ title: '', mode: 'FIXED', amount: undefined, dtInicio: '', dtFim: '' })
 const contributionState = reactive<Partial<ContributionSchema>>({ amount: undefined, date: '' })
 
 const monthKey = computed(() => `${currentMonth.value.getFullYear()}-${String(currentMonth.value.getMonth() + 1).padStart(2, '0')}`)
@@ -95,12 +100,36 @@ function openContribution(goal: MonthlyGoal) {
   contributionOpen.value = true
 }
 
+function monthBoundary(day: 'start' | 'end') {
+  if (day === 'start') return `${monthKey.value}-01`
+  const [year, month] = monthKey.value.split('-').map(Number)
+  return `${monthKey.value}-${String(new Date(year!, month!, 0).getDate()).padStart(2, '0')}`
+}
+
 function openGoalEditor(goal?: MonthlyGoal) {
   editingGoal.value = goal || null
   Object.assign(createState, goal
-    ? { title: goal.title, mode: goal.mode, amount: goal.amount }
-    : { title: '', mode: 'FIXED', amount: undefined })
+    ? {
+        title: goal.title,
+        mode: goal.mode,
+        amount: goal.amount,
+        dtInicio: goal.dtInicio || `${goal.periodMonth}-01`,
+        dtFim: goal.dtFim || ''
+      }
+    : {
+        title: '',
+        mode: 'FIXED',
+        amount: undefined,
+        dtInicio: monthBoundary('start'),
+        dtFim: monthBoundary('end')
+      })
   newGoalOpen.value = true
+}
+
+function goalPeriodLabel(goal: MonthlyGoal) {
+  const start = goal.dtInicio || `${goal.periodMonth}-01`
+  if (!goal.dtFim) return `${formatDate(start)} · ${t('noEndDate')}`
+  return `${formatDate(start)} – ${formatDate(goal.dtFim)}`
 }
 
 async function onCreateGoal(event: FormSubmitEvent<CreateSchema>) {
@@ -112,7 +141,9 @@ async function onCreateGoal(event: FormSubmitEvent<CreateSchema>) {
     title: event.data.title,
     mode: event.data.mode,
     amount: event.data.amount,
-    periodMonth: monthKey.value,
+    periodMonth: event.data.dtInicio.slice(0, 7),
+    dtInicio: event.data.dtInicio,
+    dtFim: event.data.dtFim || null,
     active: true
   }
   try {
@@ -120,7 +151,7 @@ async function onCreateGoal(event: FormSubmitEvent<CreateSchema>) {
     else await create(request, account.id, monthKey.value)
     newGoalOpen.value = false
     editingGoal.value = null
-    Object.assign(createState, { title: '', mode: 'FIXED', amount: undefined })
+    Object.assign(createState, { title: '', mode: 'FIXED', amount: undefined, dtInicio: '', dtFim: '' })
     toast.add({ title: t(wasEditing ? 'goalUpdated' : 'goalCreated'), color: 'success', icon: 'i-lucide-check' })
   } catch {
     toast.add({ title: t('goalSaveFailed'), color: 'error' })
@@ -221,6 +252,12 @@ const modeItems = computed(() => [
                     <p class="text-sm text-muted">
                       {{ goal.mode === 'FIXED' ? $t('fixedMonthlyAmount') : `${goal.amount}% ${$t('ofIncome')}` }}
                     </p>
+                    <p class="text-xs text-muted">
+                      {{ goalPeriodLabel(goal) }}
+                      <UBadge v-if="goal.recurring" size="xs" color="primary" variant="subtle" class="ml-1">
+                        {{ $t('recurringGoal') }}
+                      </UBadge>
+                    </p>
                   </div>
                   <UDropdownMenu
                     :items="[
@@ -272,6 +309,14 @@ const modeItems = computed(() => [
               <UFormField :label="createState.mode === 'FIXED' ? $t('monthlyAmount') : $t('incomePercent')" name="amount" required>
                 <UInput v-model="createState.amount" type="number" min="0.01" :max="createState.mode === 'PERCENT_INCOME' ? 100 : undefined" step="0.01" class="w-full" />
               </UFormField>
+              <div class="grid gap-4 sm:grid-cols-2">
+                <UFormField :label="$t('startDate')" name="dtInicio" required>
+                  <UInput v-model="createState.dtInicio" type="date" class="w-full" />
+                </UFormField>
+                <UFormField :label="$t('endDate')" name="dtFim" :description="$t('goalEndDateHelp')">
+                  <UInput v-model="createState.dtFim" type="date" class="w-full" />
+                </UFormField>
+              </div>
               <p class="text-xs text-muted">{{ $t('goalAccountHelp', { account: activeAccount?.name || '' }) }}</p>
               <div class="flex justify-end gap-2">
                 <UButton color="neutral" variant="subtle" :label="$t('cancel')" @click="newGoalOpen = false; editingGoal = null" />

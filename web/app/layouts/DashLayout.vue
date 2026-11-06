@@ -22,6 +22,13 @@ const links = [[{
     open.value = false
   }
 }, {
+  label: $t('investments'),
+  icon: 'i-lucide-trending-up',
+  to: '/investments',
+  onSelect: () => {
+    open.value = false
+  }
+}, {
   label: $t('categories'),
   icon: 'i-lucide-layers-2',
   to: '/categories',
@@ -53,6 +60,12 @@ const links = [[{
     label: $t('general'),
     to: '/settings',
     exact: true,
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: $t('members'),
+    to: '/settings/members',
     onSelect: () => {
       open.value = false
     }

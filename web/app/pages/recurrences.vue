@@ -50,6 +50,12 @@ async function confirmDelete(recurrence: Recurrence) {
   await refresh()
 }
 
+async function confirmRecurrence(recurrence: Recurrence) {
+  if (!recurrence.id) return
+  await $financesService.confirmRecurrence(recurrence.id)
+  await refresh()
+}
+
 watch(() => activeAccount.value?.id, refresh, { immediate: true })
 onMounted(() => loadAccounts().then(refresh))
 </script>
@@ -91,6 +97,7 @@ onMounted(() => loadAccounts().then(refresh))
                   :recurrence="count"
                   @edit="openEditModal"
                   @delete="confirmDelete"
+                  @confirm="confirmRecurrence"
                 />
               </div>
             </div>
@@ -110,6 +117,7 @@ onMounted(() => loadAccounts().then(refresh))
                   :recurrence="count"
                   @edit="openEditModal"
                   @delete="confirmDelete"
+                  @confirm="confirmRecurrence"
                 />
               </div>
             </div>

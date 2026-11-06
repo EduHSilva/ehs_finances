@@ -9,7 +9,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (e: 'edit' | 'delete', recurrence: Recurrence): void
+  (e: 'edit' | 'delete' | 'confirm', recurrence: Recurrence): void
 }>()
 </script>
 
@@ -27,10 +27,12 @@ const emit = defineEmits<{
 
       <UBadge
         size="xs"
-        :color="props.recurrence.status === 'active' ? 'success' : 'warning'"
+        :color="props.recurrence.status?.toLowerCase() === 'active'
+          ? 'success'
+          : props.recurrence.status?.toLowerCase() === 'pending' ? 'warning' : 'neutral'"
         variant="subtle"
       >
-        {{ props.recurrence.status }}
+        {{ $t(`recurrenceStatus.${(props.recurrence.status || 'inactive').toLowerCase()}`) }}
       </UBadge>
     </div>
 
@@ -53,6 +55,9 @@ const emit = defineEmits<{
 
     <UDropdownMenu
       :items="[
+        ...(props.recurrence.status === 'PENDING'
+          ? [{ label: $t('confirm'), icon: 'i-lucide-check', onSelect: () => emit('confirm', recurrence) }]
+          : []),
         { label: $t('edit'), icon: 'i-lucide-edit', onSelect: () => emit('edit', recurrence) },
         { label: $t('delete'), icon: 'i-lucide-trash', color: 'error', onSelect: () => emit('delete', recurrence) }
       ]"

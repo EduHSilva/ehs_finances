@@ -36,17 +36,24 @@ const emit = defineEmits<{
                 class="inline-block w-2.5 h-2.5 rounded-full"
                 :style="{ backgroundColor: category.color }"
               />
-              <span>{{ $t(category.classification.toLowerCase()) }}</span>
+              <UBadge
+                size="xs"
+                :color="category.income ? 'success' : 'neutral'"
+                variant="subtle"
+              >
+                {{ category.income ? $t('income') : $t('expanse') }}
+              </UBadge>
+              <span v-if="!category.income">{{ $t(category.classification?.toLowerCase() || 'essential') }}</span>
             </div>
           </div>
 
           <div class="flex items-center gap-3">
-            <div class="text-right">
+            <div v-if="!category.income" class="text-right">
               <p class="text-xs text-muted">
                 {{ $t('goal') }}
               </p>
               <p class="text-base font-semibold leading-tight">
-                {{ category.goal }}
+                {{ category.goal }}%
               </p>
             </div>
 

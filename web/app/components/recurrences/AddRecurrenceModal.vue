@@ -9,8 +9,11 @@ const props = defineProps({
   recurrency: { type: Object as () => Recurrence | null, default: null }
 })
 const { activeAccount } = useFinancialAccounts()
-
+const toast = useToast()
 const open = ref(false)
+
+const canEditCategory = computed(() => !state.id || !props.recurrency?.categoryID)
+const categoryOptions = computed(() => props.categories.filter(category => category.income === state.income))
 
 const schema = z.object({
   id: z.string().optional(),
@@ -18,7 +21,7 @@ const schema = z.object({
   day: z.coerce.number().min(1).max(31),
   value: z.coerce.number(),
   income: z.boolean(),
-  categoryID: z.string(),
+  categoryID: z.string().optional(),
   type: z.enum(['MONTH', 'INSTALLMENT']),
   installments: z.coerce.number().optional(),
   payed: z.coerce.number().optional()
@@ -63,36 +66,54 @@ const state = reactive<Partial<Schema>>({
 watch(
   () => props.recurrency,
   (c) => {
-    if (!c) return
-    Object.assign(state, {
-      id: c.id,
-      title: c.title,
-      day: c.day,
-      value: c.value,
-      income: c.income,
-      categoryID: c.categoryID,
-      type: c.type,
-      installments: c.installments ?? undefined,
-      payed: c.payed ?? undefined
-    })
+    if (!c) {
+      resetState()
+      return
+    }
+    applyRecurrence(c)
     open.value = true
-  },
-  { immediate: true }
+  }
 )
+
+watch(() => state.income, (income) => {
+  const selected = props.categories.find(category => category.id === state.categoryID)
+  if (selected && selected.income !== income) state.categoryID = undefined
+})
 
 const showInstallments = computed(() => state.type === 'INSTALLMENT')
 
-const toast = useToast()
+function applyRecurrence(c: Recurrence) {
+  Object.assign(state, {
+    id: c.id,
+    title: c.title,
+    day: c.day,
+    value: c.value,
+    income: c.income,
+    categoryID: c.categoryID,
+    type: c.type,
+    installments: c.installments ?? undefined,
+    payed: c.payed ?? undefined
+  })
+}
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   const { $financesService } = useNuxtApp()
+  if (canEditCategory.value && !event.data.categoryID) {
+    toast.add({ title: $t('categoryRequired'), color: 'error' })
+    return
+  }
 
   const payload: Recurrence = {
     ...event.data,
-    accountId: activeAccount.value?.id
+    accountId: activeAccount.value?.id,
+    status: props.recurrency?.status
   }
 
   if (event.data.id) {
+    if (!canEditCategory.value) {
+      payload.categoryID = undefined
+      payload.income = undefined as unknown as boolean
+    }
     await $financesService.editRecurrence(event.data.id, payload)
     toast.add({
       title: 'Success',
@@ -101,6 +122,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     })
   } else {
     if (!activeAccount.value) return
+    payload.status = 'ACTIVE'
     await $financesService.createRecurrence(payload)
     toast.add({
       title: 'Success',
@@ -113,28 +135,34 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   await props.refresh()
 }
 
-function openModal() {
-  open.value = true
-}
-
-function closeModal() {
-  open.value = false
+function resetState() {
   Object.assign(state, {
     id: undefined,
     title: undefined,
     day: undefined,
     value: undefined,
     income: false,
-    category: undefined,
+    categoryID: undefined,
     type: 'MONTH',
     installments: undefined,
     payed: undefined
   })
 }
 
+function openModal() {
+  if (props.recurrency) applyRecurrence(props.recurrency)
+  else resetState()
+  open.value = true
+}
+
+function closeModal() {
+  open.value = false
+  resetState()
+}
+
 const recurrenceTypes = [
-  { id: 'MONTH', label: 'Mensal' },
-  { id: 'INSTALLMENT', label: 'Parcelado' }
+  { id: 'MONTH', label: $t('monthly') },
+  { id: 'INSTALLMENT', label: $t('installments') }
 ]
 
 defineExpose({ openModal, closeModal })
@@ -184,29 +212,7 @@ defineExpose({ openModal, closeModal })
               class="w-full"
             />
           </UFormField>
-
-          <UFormField
-          v-if="!state.id"
-            :label="$t('income')"
-            name="income"
-          >
-            <USwitch v-model="state.income" />
-          </UFormField>
         </div>
-
-        <UFormField
-          v-if="!state.id"
-          :label="$t('category')"
-          name="category"
-        >
-          <UInputMenu
-            v-model="state.categoryID"
-            value-key="id"
-            label-key="title"
-            :items="props.categories"
-            class="w-full"
-          />
-        </UFormField>
 
         <UFormField
           v-if="!state.id"
@@ -217,6 +223,41 @@ defineExpose({ openModal, closeModal })
             v-model="state.type"
             value-key="id"
             :items="recurrenceTypes"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          v-if="canEditCategory"
+          :label="$t('movementType')"
+          name="income"
+        >
+          <div class="flex items-center gap-3">
+            <USwitch v-model="state.income" />
+            <span class="text-sm text-muted">{{ state.income ? $t('income') : $t('expanse') }}</span>
+          </div>
+        </UFormField>
+
+        <UFormField
+          v-if="canEditCategory"
+          :label="$t('category')"
+          name="categoryID"
+        >
+          <UInputMenu
+            v-model="state.categoryID"
+            value-key="id"
+            label-key="title"
+            :items="categoryOptions"
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField
+          v-else
+          :label="$t('category')"
+        >
+          <UInput
+            :model-value="props.recurrency?.category"
+            disabled
             class="w-full"
           />
         </UFormField>

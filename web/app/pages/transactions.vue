@@ -7,6 +7,7 @@ import type { Category, Transaction } from '~/types'
 import DashLayout from '~/layouts/DashLayout.vue'
 import CustomHeader from '~/components/CustomHeader.vue'
 import AddTransactionModal from '~/components/transactions/AddTransactionModal.vue'
+import ImportStatementModal from '~/components/transactions/ImportStatementModal.vue'
 
 const UButton = resolveComponent('UButton')
 const UBadge = resolveComponent('UBadge')
@@ -31,9 +32,16 @@ async function confirmDelete(transaction: Transaction) {
   await refresh()
 }
 
+async function confirmTransaction(transaction: Transaction) {
+  await $financesService.confirmTransaction(transaction.id)
+  await refresh()
+}
+
 const modalRef = ref<InstanceType<typeof AddTransactionModal> | null>(null)
+const importModalRef = ref<InstanceType<typeof ImportStatementModal> | null>(null)
 
 const selectedTransaction = ref<Transaction | null>(null)
+const reviewCount = computed(() => data.value.filter(transaction => transaction.status === 'REVIEW').length)
 
 function openModal() {
   modalRef.value?.openModal()
@@ -74,6 +82,24 @@ function getRowItems(row: Row<Transaction>) {
       type: 'label',
       label: $t('actions')
     },
+    ...(row.original.status === 'PENDING'
+      ? [{
+          label: $t('confirm'),
+          icon: 'i-lucide-check',
+          onSelect() {
+            confirmTransaction(row.original)
+          }
+        }]
+      : []),
+    ...(row.original.status === 'REVIEW'
+      ? [{
+          label: $t('reviewImport'),
+          icon: 'i-lucide-search-check',
+          onSelect() {
+            importModalRef.value?.openReview()
+          }
+        }]
+      : []),
     {
       label: $t('edit'),
       icon: 'i-lucide-edit',
@@ -159,6 +185,7 @@ const columns: TableColumn<Transaction>[] = [
     cell: ({ row }) => {
       const color = {
         OK: 'success' as const,
+        PENDING: 'warning' as const,
         REVIEW: 'warning' as const,
         DELAY: 'error' as const,
         DELETED: 'neutral' as const
@@ -167,7 +194,7 @@ const columns: TableColumn<Transaction>[] = [
       return h(
         UBadge,
         { class: 'capitalize', variant: 'subtle', color },
-        () => row.original.status
+        () => $t(`transactionStatus.${row.original.status.toLowerCase()}`)
       )
     }
   },
@@ -231,12 +258,28 @@ const pagination = ref({
     <UDashboardPanel id="transactions">
       <template #header>
         <CustomHeader>
-          <UButton
-            v-if="activeAccount"
-            :label="$t('newTransaction')"
-            class="bg-primary dark:bg-primary-dark"
-            @click="showNewTransaction"
-          />
+          <div v-if="activeAccount" class="flex flex-wrap items-center gap-2">
+            <UButton
+              :label="$t('importStatement')"
+              icon="i-lucide-upload"
+              color="neutral"
+              variant="outline"
+              @click="importModalRef?.openModal()"
+            />
+            <UButton
+              v-if="reviewCount"
+              :label="$t('reviewImportsCount', { count: reviewCount })"
+              icon="i-lucide-search-check"
+              color="warning"
+              variant="subtle"
+              @click="importModalRef?.openReview()"
+            />
+            <UButton
+              :label="$t('newTransaction')"
+              class="bg-primary dark:bg-primary-dark"
+              @click="showNewTransaction"
+            />
+          </div>
         </CustomHeader>
       </template>
 
@@ -245,7 +288,12 @@ const pagination = ref({
           ref="modalRef"
           :categories="categories"
           :refresh="refresh"
-          :recurrency="selectedTransaction"
+          :transaction="selectedTransaction"
+        />
+        <ImportStatementModal
+          ref="importModalRef"
+          :categories="categories"
+          :refresh="refresh"
         />
         <div class="flex flex-wrap items-center justify-between gap-1.5">
           <UInput
@@ -259,14 +307,15 @@ const pagination = ref({
             <USelect
               v-model="statusFilter"
               :items="[
-                { label: 'All', value: 'all' },
-                { label: 'OK', value: 'OK' },
-                { label: 'Review', value: 'REVIEW' },
-                { label: 'Delayed', value: 'DELAY' },
-                { label: 'Deleted', value: 'DELETED' }
+                { label: $t('all'), value: 'all' },
+                { label: $t('transactionStatus.pending'), value: 'PENDING' },
+                { label: $t('transactionStatus.ok'), value: 'OK' },
+                { label: $t('transactionStatus.review'), value: 'REVIEW' },
+                { label: $t('transactionStatus.delay'), value: 'DELAY' },
+                { label: $t('transactionStatus.deleted'), value: 'DELETED' }
               ]"
               :ui="{ trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200' }"
-              placeholder="Filter status"
+              :placeholder="$t('filterStatus')"
               class="min-w-28"
             />
             <UDropdownMenu
@@ -310,6 +359,7 @@ const pagination = ref({
           class="shrink-0"
           :data="data"
           :columns="columns"
+          :empty="$t('noData')"
           :ui="{
             base: 'table-fixed border-separate border-spacing-0',
             thead: '[&>tr]:bg-elevated/50 [&>tr]:after:content-none',

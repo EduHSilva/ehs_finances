@@ -1,4 +1,4 @@
-import type { CashflowProjection, Category, FinancePreferences, FinancialAccount, GoalContribution, MonthlyGoal, MonthlyGoalSummary, Recurrence, Transaction } from '~/types'
+import type { CashflowProjection, Category, DashboardPending, FinancePreferences, FinancialAccount, GoalContribution, InvestmentMovement, InvestmentMovementType, InvestmentSummary, MonthlyGoal, MonthlyGoalSummary, Recurrence, Transaction } from '~/types'
 import type { DefaultResponse, Page } from '~/utils/types'
 import { getTokenCookie } from '~/utils/util'
 
@@ -12,6 +12,8 @@ export interface MonthlyGoalRequest {
   mode: 'FIXED' | 'PERCENT_INCOME'
   amount: number
   periodMonth: string
+  dtInicio?: string | null
+  dtFim?: string | null
   active?: boolean
 }
 
@@ -29,12 +31,70 @@ export interface UpdateTransactionRequest {
   value: number
   title: string
   executionDate?: string
+  categoryID?: string
+  income?: boolean
+}
+
+export interface InvestmentMovementRequest {
+  accountId: string
+  type: InvestmentMovementType
+  amount: number
+  date: string
+  description?: string
 }
 
 export interface CreateAccountRequest {
   name: string
   type: 'PF' | 'PJ'
   openingBalance: number
+}
+
+export interface StatementImportLineRequest {
+  description: string
+  amount: number
+  income: boolean
+  date: string
+  categoryId?: string
+  sourceTransactionId?: string
+}
+
+export interface StatementImportRequest {
+  accountId: string
+  source: string
+  lines: StatementImportLineRequest[]
+}
+
+export interface StatementImportPreviewLine {
+  row: number
+  key: string
+  description: string
+  amount: number
+  income: boolean
+  date: string
+  duplicate: boolean
+}
+
+export interface StatementImportPreview {
+  lines: StatementImportPreviewLine[]
+  importable: number
+  duplicates: number
+}
+
+export interface StatementImportResult {
+  imported: number
+  duplicates: number
+}
+
+export interface ReviewImportedTransactionRequest {
+  approved: boolean
+  categoryId?: string
+}
+
+export interface TransactionImportAudit {
+  id: string
+  transactionId: string
+  event: string
+  createdAt: string
 }
 
 export interface FinancesService {
@@ -52,8 +112,19 @@ export interface FinancesService {
   editRecurrence(id: string, recurrence: Recurrence): Promise<DefaultResponse<Recurrence>>
   getTransactions(accountId?: string, page?: number, size?: number): Promise<DefaultResponse<Page<Transaction>>>
   deleteTransaction(id: string): Promise<DefaultResponse<void>>
+  confirmTransaction(id: string): Promise<DefaultResponse<Transaction>>
   editTransaction(id: string, transaction: UpdateTransactionRequest): Promise<DefaultResponse<Transaction>>
   createTransaction(transaction: CreateTransactionRequest): Promise<DefaultResponse<Transaction>>
+  previewStatementImport(request: StatementImportRequest): Promise<DefaultResponse<StatementImportPreview>>
+  confirmStatementImport(request: StatementImportRequest): Promise<DefaultResponse<StatementImportResult>>
+  reviewImportedTransaction(id: string, review: ReviewImportedTransactionRequest): Promise<DefaultResponse<Transaction | null>>
+  getTransactionImportAudit(id: string): Promise<DefaultResponse<TransactionImportAudit[]>>
+  confirmRecurrence(id: string): Promise<DefaultResponse<Recurrence>>
+  getPending(accountId: string, days?: number): Promise<DefaultResponse<DashboardPending>>
+  getInvestments(accountId: string): Promise<DefaultResponse<InvestmentMovement[]>>
+  getInvestmentSummary(accountId: string): Promise<DefaultResponse<InvestmentSummary>>
+  createInvestmentMovement(movement: InvestmentMovementRequest): Promise<DefaultResponse<InvestmentMovement>>
+  deleteInvestmentMovement(id: string): Promise<DefaultResponse<void>>
   getGoals(accountId: string, periodMonth: string): Promise<DefaultResponse<Page<MonthlyGoal>>>
   createGoal(goal: MonthlyGoalRequest): Promise<DefaultResponse<MonthlyGoal>>
   updateGoal(id: string, goal: MonthlyGoalRequest): Promise<DefaultResponse<MonthlyGoal>>
@@ -79,7 +150,8 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
     getCategories: () => $fetch(`${baseUrl}categories?page=0&size=200`, { headers: authHeaders() }),
     createCategory: category => $fetch(`${baseUrl}categories`, {
       headers: authHeaders(), method: 'POST', body: {
-        title: category.title, color: category.color, goal: category.goal, classification: category.classification
+        title: category.title, color: category.color, goal: category.goal,
+        classification: category.classification, income: category.income
       }
     }),
     deleteCategory: id => $fetch(`${baseUrl}categories/${id}`, {
@@ -87,7 +159,8 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
     }),
     editCategory: (id, category) => $fetch(`${baseUrl}categories/${id}`, {
       headers: authHeaders(), method: 'PUT', body: {
-        title: category.title, goal: category.goal, color: category.color
+        title: category.title, goal: category.goal, color: category.color,
+        classification: category.classification, income: category.income
       }
     }),
     getRecurrences: accountId => $fetch(`${baseUrl}recurrences`, {
@@ -97,7 +170,8 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
       headers: authHeaders(), method: 'POST', body: {
         day: recurrence.day, income: recurrence.income, categoryID: recurrence.categoryID,
         type: recurrence.type, installments: recurrence.installments, payed: recurrence.payed,
-        value: recurrence.value, title: recurrence.title, accountId: recurrence.accountId
+        value: recurrence.value, title: recurrence.title, accountId: recurrence.accountId,
+        status: recurrence.status
       }
     }),
     deleteRecurrence: id => $fetch(`${baseUrl}recurrences/${id}`, {
@@ -109,8 +183,14 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
         day: recurrence.day,
         value: recurrence.value,
         installments: recurrence.installments,
-        payed: recurrence.payed
+        payed: recurrence.payed,
+        categoryID: recurrence.categoryID,
+        income: recurrence.income,
+        status: recurrence.status
       }
+    }),
+    confirmRecurrence: id => $fetch(`${baseUrl}recurrences/${id}/confirm`, {
+      headers: authHeaders(), method: 'POST'
     }),
     getTransactions: (accountId, page = 0, size = 200) => $fetch(`${baseUrl}transactions`, {
       headers: authHeaders(), query: { accountId, page, size }
@@ -118,11 +198,16 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
     deleteTransaction: id => $fetch(`${baseUrl}transactions/${id}`, {
       headers: authHeaders(), method: 'DELETE'
     }),
+    confirmTransaction: id => $fetch(`${baseUrl}transactions/${id}/confirm`, {
+      headers: authHeaders(), method: 'POST'
+    }),
     editTransaction: (id, transaction) => $fetch(`${baseUrl}transactions/${id}`, {
       headers: authHeaders(), method: 'PUT', body: {
         title: transaction.title,
         value: transaction.value,
-        executionDate: transaction.executionDate
+        executionDate: transaction.executionDate,
+        categoryID: transaction.categoryID,
+        income: transaction.income
       }
     }),
     createTransaction: transaction => $fetch(`${baseUrl}transactions`, {
@@ -131,6 +216,18 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
         title: transaction.title, recurrencyID: transaction.recurrencyID,
         executionDate: transaction.executionDate, accountId: transaction.accountId
       }
+    }),
+    previewStatementImport: request => $fetch(`${baseUrl}transactions/import/preview`, {
+      headers: authHeaders(), method: 'POST', body: request
+    }),
+    confirmStatementImport: request => $fetch(`${baseUrl}transactions/import/confirm`, {
+      headers: authHeaders(), method: 'POST', body: request
+    }),
+    reviewImportedTransaction: (id, review) => $fetch(`${baseUrl}transactions/${id}/review`, {
+      headers: authHeaders(), method: 'PUT', body: review
+    }),
+    getTransactionImportAudit: id => $fetch(`${baseUrl}transactions/${id}/import-audit`, {
+      headers: authHeaders()
     }),
     getGoals: (accountId, periodMonth) => $fetch(`${baseUrl}goals`, {
       headers: authHeaders(), query: { accountId, periodMonth, page: 0, size: 200 }
@@ -152,6 +249,21 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
     }),
     getProjection: (accountId, days = 90) => $fetch(`${baseUrl}dashboard/projection`, {
       headers: authHeaders(), query: { accountId, days }
+    }),
+    getPending: (accountId, days = 30) => $fetch(`${baseUrl}dashboard/pending`, {
+      headers: authHeaders(), query: { accountId, days }
+    }),
+    getInvestments: accountId => $fetch(`${baseUrl}investments`, {
+      headers: authHeaders(), query: { accountId }
+    }),
+    getInvestmentSummary: accountId => $fetch(`${baseUrl}investments/summary`, {
+      headers: authHeaders(), query: { accountId }
+    }),
+    createInvestmentMovement: movement => $fetch(`${baseUrl}investments`, {
+      headers: authHeaders(), method: 'POST', body: movement
+    }),
+    deleteInvestmentMovement: id => $fetch(`${baseUrl}investments/${id}`, {
+      headers: authHeaders(), method: 'DELETE'
     })
   }
 }

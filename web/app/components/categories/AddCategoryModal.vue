@@ -8,55 +8,70 @@ const props = defineProps({
   category: { type: Object as () => Category | null, default: null }
 })
 
-watch(
-  () => props.category,
-  (c) => {
-    if (!c) return
-    state.id = c.id
-    state.title = c.title
-    state.goal = c.goal
-    state.classification = c.classification
-    state.color = c.color
-    open.value = true
-  },
-  { immediate: true }
-)
-
-const chip = computed(() => ({ backgroundColor: state.color }))
+const open = ref(false)
 
 const schema = z.object({
   id: z.string().optional(),
   title: z.string().min(2, 'Too short'),
-  goal: z.coerce.number(),
+  goal: z.coerce.number().min(0).max(100),
   classification: z.string().min(2, 'Too short'),
-  color: z.string().min(2, 'Too short')
+  color: z.string().min(2, 'Too short'),
+  income: z.boolean().default(false)
 })
-const open = ref(false)
 
 type Schema = z.output<typeof schema>
 
 const state = reactive<Partial<Schema>>({
   title: undefined,
   id: undefined,
-  goal: undefined,
-  classification: undefined,
-  color: undefined
+  goal: 0,
+  classification: 'ESSENTIAL',
+  color: undefined,
+  income: false
 })
+
+watch(
+  () => props.category,
+  (c) => {
+    if (!c) return
+    Object.assign(state, {
+      id: c.id,
+      title: c.title,
+      goal: c.goal,
+      classification: c.classification || 'ESSENTIAL',
+      color: c.color,
+      income: c.income
+    })
+    open.value = true
+  },
+  { immediate: true }
+)
+
+watch(() => state.income, (income) => {
+  if (income) state.goal = 0
+})
+
+const chip = computed(() => ({ backgroundColor: state.color }))
 
 const toast = useToast()
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   const { $financesService } = useNuxtApp()
+  const payload = {
+    ...event.data,
+    goal: event.data.income ? 0 : event.data.goal,
+    classification: event.data.income ? 'ESSENTIAL' : event.data.classification
+  } as Category
 
   if (event.data.id) {
-    await $financesService.editCategory(event.data.id, event.data as Category)
+    await $financesService.editCategory(event.data.id, payload)
     toast.add({
       title: $t('success'),
       description: $t('update'),
       color: 'success'
     })
   } else {
-    await $financesService.createCategory(event.data as Category)
+    await $financesService.createCategory(payload)
     toast.add({
       title: 'Success',
       description: `New category ${event.data.title} added`,
@@ -79,19 +94,25 @@ const items = ref([
   }]
 )
 
+function resetState() {
+  Object.assign(state, {
+    id: undefined,
+    title: undefined,
+    goal: 0,
+    classification: 'ESSENTIAL',
+    color: undefined,
+    income: false
+  })
+}
+
 function openModal() {
+  if (!props.category) resetState()
   open.value = true
 }
 
 function closeModal() {
   open.value = false
-  Object.assign(state, {
-    id: undefined,
-    title: undefined,
-    goal: undefined,
-    classification: undefined,
-    color: undefined
-  })
+  resetState()
 }
 
 defineExpose({ openModal, closeModal })
@@ -120,29 +141,49 @@ defineExpose({ openModal, closeModal })
             class="w-full"
           />
         </UFormField>
+
         <UFormField
-          :label="$t('goal')"
-          :placeholder="$t('enterGoal')"
-          name="goal"
+          :label="$t('categoryDirection')"
+          :description="$t('categoryDirectionHelp')"
+          name="income"
         >
-          <UInput
-            v-model="state.goal"
-            class="w-full"
-            type="number"
-          />
+          <div class="flex items-center gap-3">
+            <USwitch v-model="state.income" />
+            <span class="text-sm text-muted">
+              {{ state.income ? $t('income') : $t('expanse') }}
+            </span>
+          </div>
         </UFormField>
-        <UFormField
-          :label="$t('classification')"
-          :placeholder="$t('enterClassification')"
-          name="classification"
-        >
-          <UInputMenu
-            v-model="state.classification"
-            value-key="id"
-            :items="items"
-            class="w-full"
-          />
-        </UFormField>
+
+        <template v-if="!state.income">
+          <UFormField
+            :label="$t('goal')"
+            :description="$t('categoryGoalHelp')"
+            :placeholder="$t('enterGoal')"
+            name="goal"
+          >
+            <UInput
+              v-model="state.goal"
+              class="w-full"
+              type="number"
+              min="0"
+              max="100"
+            />
+          </UFormField>
+          <UFormField
+            :label="$t('classification')"
+            :placeholder="$t('enterClassification')"
+            name="classification"
+          >
+            <UInputMenu
+              v-model="state.classification"
+              value-key="id"
+              :items="items"
+              class="w-full"
+            />
+          </UFormField>
+        </template>
+
         <UPopover>
           <UButton
             :label="$t('color')"

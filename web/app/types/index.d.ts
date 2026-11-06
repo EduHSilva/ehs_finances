@@ -1,6 +1,7 @@
 import type { AvatarProps } from '@nuxt/ui'
 
-export type TransactionStatus = 'OK' | 'REVIEW' | 'DELAY' | 'DELETED'
+export type TransactionStatus = 'OK' | 'PENDING' | 'REVIEW' | 'DELAY' | 'DELETED'
+export type RecurrenceStatus = 'ACTIVE' | 'PENDING' | 'INACTIVE' | 'PAYED' | 'DELETED'
 export type SaleStatus = 'paid' | 'failed' | 'refunded'
 export type FinancialAccountType = 'PF' | 'PJ'
 
@@ -27,6 +28,9 @@ export interface MonthlyGoal {
   mode: MonthlyGoalMode
   amount: number
   periodMonth: string
+  dtInicio?: string | null
+  dtFim?: string | null
+  recurring?: boolean
   active?: boolean
 }
 
@@ -70,6 +74,10 @@ export interface CashflowProjection {
     amount: number
     income: boolean
     kind: string
+    recurrenceId?: string
+    installmentNumber?: number
+    installments?: number
+    payed?: number
   }>
 }
 
@@ -92,6 +100,7 @@ export interface Category {
   classification: string
   goal: number
   color: string
+  income: boolean
 }
 
 export interface Recurrence {
@@ -100,13 +109,48 @@ export interface Recurrence {
   categoryID?: string
   category?: string
   value: number
-  status?: string
+  status?: RecurrenceStatus
   income: boolean
   type: string
   day: number
   installments?: number
   payed?: number
   accountId?: string
+}
+
+export type InvestmentMovementType = 'CONTRIBUTION' | 'WITHDRAWAL'
+
+export interface InvestmentMovement {
+  id: string
+  accountId: string
+  type: InvestmentMovementType
+  amount: number
+  date: string
+  description?: string | null
+}
+
+export interface InvestmentSummary {
+  accountId: string
+  totalContributions: number
+  totalWithdrawals: number
+  balance: number
+  currency: string
+}
+
+export interface PendingItem {
+  id: string
+  kind: 'TRANSACTION' | 'RECURRENCE'
+  title: string
+  amount: number
+  income: boolean
+  date: string
+  status: TransactionStatus | RecurrenceStatus
+}
+
+export interface DashboardPending {
+  accountId: string
+  horizonDays: number
+  items: PendingItem[]
 }
 
 export interface InstallmentItem {
