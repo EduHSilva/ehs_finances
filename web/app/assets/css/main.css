@@ -1,14 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700&display=swap');
 @import "tailwindcss" theme(static);
 @import "@nuxt/ui";
 
 @theme static {
-  --font-sans: 'Public Sans', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Outfit', sans-serif;
 
   /* Brand tokens live here for CSS and in app/design-system/tokens.ts for Nuxt UI config. */
   --brand-radius: 0.5rem;
-  --brand-success: #16a34a;
-  --brand-warning: #d97706;
-  --brand-danger: #dc2626;
+  --brand-primary: #4F46E5;
+  --brand-primary-hover: #4338CA;
+  --brand-primary-soft: #E0E7FF;
+  --brand-accent: #7C3AED;
+  --brand-success: #16A34A;
+  --brand-warning: #D97706;
+  --brand-danger: #DC2626;
 
   --color-green-50: #EFFDF5;
   --color-green-100: #D9FBE8;
@@ -21,4 +27,13 @@
   --color-green-800: #016538;
   --color-green-900: #0A5331;
   --color-green-950: #052E16;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
 }

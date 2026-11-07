@@ -156,8 +156,8 @@ onMounted(async () => {
                 {{ $t('withdrawals') }} {{ formatCurrency(investmentSummary.totalWithdrawals) }}
               </p>
               <UButton
-                to="/investments"
-                :label="$t('manageInvestments')"
+                to="/goals"
+                :label="$t('manageGoals')"
                 size="xs"
                 variant="link"
                 class="mt-2 p-0"

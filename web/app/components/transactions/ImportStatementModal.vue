@@ -27,6 +27,8 @@ const { t } = useI18n()
 const toast = useToast()
 const { $financesService } = useNuxtApp()
 const { activeAccount, accountOptions, loadAccounts } = useFinancialAccounts()
+const categoryLabel = useCategoryLabel()
+const ofxConverterUrl = computed(() => String(useRuntimeConfig().public.ofxConverterUrl || ''))
 
 const open = ref(false)
 const step = ref<'upload' | 'preview' | 'result'>('upload')
@@ -45,6 +47,7 @@ const confirming = ref(false)
 const reviewingId = ref('')
 const discardTarget = ref<Transaction | null>(null)
 const discardLoading = ref(false)
+const pdfFileName = ref('')
 
 const title = computed(() => step.value === 'result' && !result.value ? t('reviewImports') : t('importStatement'))
 const description = computed(() => step.value === 'result' && !result.value ? t('reviewImportsDesc') : t('importStatementDesc'))
@@ -65,7 +68,7 @@ function categoryOptions(income: boolean) {
     { label: t('noCategory'), value: '' },
     ...categoryList.value
       .filter(category => category.income === income)
-      .map(category => ({ label: category.title, value: category.id }))
+      .map(category => ({ label: categoryLabel(category.title, category.defaultKey), value: category.id }))
   ]
 }
 
@@ -79,6 +82,7 @@ function resetFlow() {
   result.value = null
   reviewing.value = []
   reviewCategories.value = {}
+  pdfFileName.value = ''
 }
 
 async function ensureReferenceData() {
@@ -136,6 +140,12 @@ async function onFileChange(event: Event) {
 
   rows.value = []
   preview.value = null
+  pdfFileName.value = ''
+
+  if (file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf') {
+    pdfFileName.value = file.name
+    return
+  }
 
   try {
     const content = await readStatementFile(file)
@@ -242,9 +252,20 @@ async function loadReviewing() {
     return
   }
   try {
-    const response = await $financesService.getTransactions(selectedAccountId.value)
-    reviewing.value = (response.data.items as Transaction[])
-      .filter(transaction => transaction.status === 'REVIEW')
+    const accountId = selectedAccountId.value
+    const size = 200
+    const all: Transaction[] = []
+    let page = 0
+    let total = Infinity
+    while (all.length < total) {
+      const response = await $financesService.getTransactions(accountId, page, size)
+      const items = response.data.items as Transaction[]
+      all.push(...items)
+      total = response.data.total
+      if (!items.length) break
+      page++
+    }
+    reviewing.value = all.filter(transaction => transaction.status === 'REVIEW')
     const categories: Record<string, string | undefined> = {}
     reviewing.value.forEach((transaction) => {
       categories[transaction.id] = transaction.categoryID
@@ -316,6 +337,28 @@ defineExpose({ openModal, openReview })
           :description="$t('importFileHelp')"
         />
 
+        <UAlert
+          v-if="pdfFileName"
+          color="warning"
+          variant="subtle"
+          icon="i-lucide-file-text"
+          :title="$t('importPdfDetectedTitle')"
+          :description="$t('importPdfDetectedDesc', { file: pdfFileName })"
+        >
+          <template #actions>
+            <UButton
+              :to="ofxConverterUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              :label="$t('importPdfConvert')"
+              icon="i-lucide-external-link"
+              color="warning"
+              variant="subtle"
+              size="sm"
+            />
+          </template>
+        </UAlert>
+
         <label
           class="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-default bg-elevated/40 px-6 py-10 text-center transition hover:border-primary hover:bg-elevated/70"
           :class="{ 'pointer-events-none opacity-50': !selectedAccountId }"
@@ -325,11 +368,25 @@ defineExpose({ openModal, openReview })
           <span class="text-sm text-muted">{{ $t('importFormats') }}</span>
           <input
             type="file"
-            accept=".csv,.ofx,text/csv,application/x-ofx"
+            accept=".csv,.ofx,.pdf,text/csv,application/x-ofx,application/pdf"
             class="sr-only"
             @change="onFileChange"
           >
         </label>
+
+        <p class="text-center text-sm text-muted">
+          {{ $t('importPdfHint') }}
+          <UButton
+            :to="ofxConverterUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            :label="$t('importPdfConvert')"
+            variant="link"
+            size="sm"
+            trailing-icon="i-lucide-external-link"
+            class="p-0"
+          />
+        </p>
 
         <div class="flex justify-end">
           <UButton :label="$t('cancel')" color="neutral" variant="subtle" @click="closeModal" />

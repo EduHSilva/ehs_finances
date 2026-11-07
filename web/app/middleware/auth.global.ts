@@ -1,25 +1,31 @@
 import { useUser } from '~/plugins/userService'
 import { getTokenCookie } from '~/utils/util'
 
+const PUBLIC_PATHS = ['/', '/auth/login', '/auth/register']
+const AUTH_PATHS = ['/auth/login', '/auth/register']
+
 export default defineNuxtRouteMiddleware(async (to) => {
-  const URLS_NO_LOGIN = ['/auth/login', '/auth/register', '/']
-
   const token = getTokenCookie()
-
-  if (URLS_NO_LOGIN.includes(to.path)) {
-    return
-  }
-
   const user = useUser()
   const { $userService } = useNuxtApp()
 
-  if (user.value) return
-  try {
-    const response = await $userService.getUser()
-    user.value = response.data
-  } catch (e) {
-    console.error(e)
-    token.value = { token: null }
-    return navigateTo('/')
+  if (token.value?.token && !user.value) {
+    try {
+      user.value = (await $userService.getUser()).data
+    } catch {
+      token.value = null
+    }
+  }
+
+  if (AUTH_PATHS.includes(to.path) && user.value) {
+    return navigateTo('/dashboard')
+  }
+
+  if (PUBLIC_PATHS.includes(to.path)) {
+    return
+  }
+
+  if (!user.value) {
+    return navigateTo('/auth/login')
   }
 })

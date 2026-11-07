@@ -24,6 +24,7 @@ const rowSelection = ref({ 1: true })
 
 const { $financesService } = useNuxtApp()
 const { activeAccount, loadAccounts } = useFinancialAccounts()
+const categoryLabel = useCategoryLabel()
 
 const data = ref<Transaction[]>([])
 
@@ -69,8 +70,20 @@ async function refresh() {
     const categoryResponse = await $financesService.getCategories()
     categories.value = categoryResponse.data.items
   }
-  const response = await $financesService.getTransactions(activeAccount.value.id)
-  data.value = response.data.items as Transaction[]
+  const accountId = activeAccount.value.id
+  const size = 200
+  const all: Transaction[] = []
+  let page = 0
+  let total = Infinity
+  while (all.length < total) {
+    const response = await $financesService.getTransactions(accountId, page, size)
+    const items = response.data.items as Transaction[]
+    all.push(...items)
+    total = response.data.total
+    if (!items.length) break
+    page++
+  }
+  data.value = all
 }
 
 watch(() => activeAccount.value?.id, () => refresh(), { immediate: true })
@@ -122,7 +135,7 @@ const columnVisibility = ref({
   id: false
 })
 
-const columns: TableColumn<Transaction>[] = [
+const columns = computed<TableColumn<Transaction>[]>(() => [
   {
     id: 'select',
     header: ({ table }) =>
@@ -159,7 +172,8 @@ const columns: TableColumn<Transaction>[] = [
   },
   {
     accessorKey: 'category',
-    header: $t('category')
+    header: $t('category'),
+    cell: ({ row }) => categoryLabel(row.original.category, row.original.categoryKey)
   },
   {
     accessorKey: 'classification',
@@ -221,7 +235,7 @@ const columns: TableColumn<Transaction>[] = [
         )
       )
   }
-]
+])
 
 const statusFilter = ref('all')
 

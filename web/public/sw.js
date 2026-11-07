@@ -1,5 +1,5 @@
-const CACHE_NAME = 'finances-shell-v1'
-const APP_SHELL = ['/', '/dashboard', '/manifest.webmanifest', '/favicon.ico']
+const CACHE_NAME = 'ehs-finances-shell-v3'
+const APP_SHELL = ['./', './dashboard', './manifest.webmanifest', './favicon.svg', './favicon.ico']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

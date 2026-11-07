@@ -9,11 +9,9 @@ const props = defineProps({
   recurrency: { type: Object as () => Recurrence | null, default: null }
 })
 const { activeAccount } = useFinancialAccounts()
+const categoryLabel = useCategoryLabel()
 const toast = useToast()
 const open = ref(false)
-
-const canEditCategory = computed(() => !state.id || !props.recurrency?.categoryID)
-const categoryOptions = computed(() => props.categories.filter(category => category.income === state.income))
 
 const schema = z.object({
   id: z.string().optional(),
@@ -62,6 +60,11 @@ const state = reactive<Partial<Schema>>({
   installments: undefined,
   payed: undefined
 })
+
+const canEditCategory = computed(() => !state.id || !props.recurrency?.categoryID)
+const categoryOptions = computed(() => props.categories
+  .filter(category => category.income === state.income)
+  .map(category => ({ ...category, title: categoryLabel(category.title, category.defaultKey) })))
 
 watch(
   () => props.recurrency,
@@ -256,7 +259,7 @@ defineExpose({ openModal, closeModal })
           :label="$t('category')"
         >
           <UInput
-            :model-value="props.recurrency?.category"
+            :model-value="categoryLabel(props.recurrency?.category, props.recurrency?.categoryKey)"
             disabled
             class="w-full"
           />

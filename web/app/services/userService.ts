@@ -5,10 +5,17 @@ export interface UserServiceOptions {
   apiUrl: string | unknown
 }
 
+export interface RegisteredUser {
+  id: string
+  username: string
+  email: string
+  status?: string
+}
+
 export interface UserService {
   login(email: string, password: string): Promise<DefaultResponse<User>>
   getUser(): Promise<DefaultResponse<User>>
-  register(username: string, email: string, password: string): Promise<DefaultResponse<User>>
+  register(username: string, email: string, password: string): Promise<DefaultResponse<RegisteredUser>>
 }
 
 export default function userService({ apiUrl }: UserServiceOptions): UserService {
@@ -20,8 +27,8 @@ export default function userService({ apiUrl }: UserServiceOptions): UserService
     getUser: () => $fetch(`${baseUrl}auth/me`, {
       headers: { Authorization: `Bearer ${getTokenCookie().value?.token || ''}` }
     }),
-    register: (username, email, password) => $fetch(baseUrl, {
-      method: 'POST', body: { username, email, password, role: 'CRM' }
+    register: (username, email, password) => $fetch(`${baseUrl}auth/register`, {
+      method: 'POST', body: { username, email, password, role: 'FINANCES' }
     })
   }
 }

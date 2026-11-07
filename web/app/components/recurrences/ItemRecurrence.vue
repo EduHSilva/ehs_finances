@@ -11,6 +11,8 @@ const props = defineProps({
 const emit = defineEmits<{
   (e: 'edit' | 'delete' | 'confirm', recurrence: Recurrence): void
 }>()
+
+const categoryLabel = useCategoryLabel()
 </script>
 
 <template>
@@ -40,7 +42,7 @@ const emit = defineEmits<{
       <span>{{ props.recurrence.income ? $t('income') : $t('expanse') }}</span> •
       <span>{{ props.recurrence.day }}</span>
       <template v-if="props.recurrence.category">
-        • <span>{{ props.recurrence.category }}</span>
+        • <span>{{ categoryLabel(props.recurrence.category, props.recurrence.categoryKey) }}</span>
       </template>
     </div>
   </div>

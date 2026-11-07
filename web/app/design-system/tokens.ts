@@ -1,16 +1,17 @@
 export const designTokens = {
   brand: {
-    name: 'Finances',
+    name: 'EHS Finances',
     logoIcon: 'i-lucide-wallet-cards'
   },
   typography: {
-    sans: 'Public Sans, sans-serif'
+    sans: 'Inter, sans-serif',
+    display: 'Outfit, sans-serif'
   },
   colors: {
-    primary: 'green',
+    primary: 'indigo',
     neutral: 'zinc',
-    success: '#16a34a',
-    warning: '#d97706',
-    danger: '#dc2626'
+    success: '#16A34A',
+    warning: '#D97706',
+    danger: '#DC2626'
   }
 }

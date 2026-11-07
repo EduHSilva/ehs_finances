@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
-import { designTokens } from '~/design-system/tokens'
 
 const route = useRoute()
 const toast = useToast()
@@ -18,13 +17,6 @@ const links = [[{
   label: $t('transactions'),
   icon: 'i-lucide-dollar-sign',
   to: '/transactions',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: $t('investments'),
-  icon: 'i-lucide-trending-up',
-  to: '/investments',
   onSelect: () => {
     open.value = false
   }
@@ -142,13 +134,7 @@ onMounted(async () => {
       :ui="{ footer: 'lg:border-t lg:border-default' }"
     >
       <template #header>
-        <div class="flex items-center gap-2 font-semibold">
-          <UIcon
-            :name="designTokens.brand.logoIcon"
-            class="size-5 text-primary"
-          />
-          <span>{{ designTokens.brand.name }}</span>
-        </div>
+        <BrandLogo />
       </template>
 
       <template #default="{ collapsed }">

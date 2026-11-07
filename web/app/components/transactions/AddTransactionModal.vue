@@ -9,13 +9,41 @@ const props = defineProps({
   categories: { type: Array as PropType<Category[]>, required: true }
 })
 const { activeAccount } = useFinancialAccounts()
-const { locale } = useI18n()
+const { locale, t } = useI18n()
+const categoryLabel = useCategoryLabel()
 const localeTag = computed(() => locale.value === 'pt' ? 'pt-BR' : 'en-US')
 const toast = useToast()
 const open = ref(false)
 
+const schema = z.object({
+  id: z.string().optional(),
+  title: z.string().min(2, 'Too short'),
+  value: z.coerce.number(),
+  categoryID: z.string().optional(),
+  income: z.boolean().default(false),
+  pending: z.boolean().default(false),
+  executionDate: z.any()
+})
+
+type Schema = z.output<typeof schema>
+
+const state = reactive<Partial<Schema>>({
+  title: undefined,
+  id: undefined,
+  value: undefined,
+  categoryID: undefined,
+  income: false,
+  pending: false,
+  executionDate: undefined
+})
+
 const canEditCategory = computed(() => !state.id || !props.transaction?.categoryID)
-const categoryOptions = computed(() => props.categories.filter(category => category.income === state.income))
+const categoryOptions = computed(() => [
+  { id: '', title: t('noCategory') },
+  ...props.categories
+    .filter(category => category.income === state.income)
+    .map(category => ({ id: category.id, title: categoryLabel(category.title, category.defaultKey) }))
+])
 
 watch(
   () => props.transaction,
@@ -31,6 +59,7 @@ watch(
       value: t.value,
       categoryID: t.categoryID ?? matchingCategory?.id,
       income: t.income,
+      pending: false,
       executionDate: t.executionDate ? parseLocalDate(t.executionDate) : undefined
     })
     open.value = true
@@ -42,32 +71,8 @@ watch(() => state.income, (income) => {
   if (selected && selected.income !== income) state.categoryID = undefined
 })
 
-const schema = z.object({
-  id: z.string().optional(),
-  title: z.string().min(2, 'Too short'),
-  value: z.coerce.number(),
-  categoryID: z.string().optional(),
-  income: z.boolean().default(false),
-  executionDate: z.any()
-})
-
-type Schema = z.output<typeof schema>
-
-const state = reactive<Partial<Schema>>({
-  title: undefined,
-  id: undefined,
-  value: undefined,
-  categoryID: undefined,
-  income: false,
-  executionDate: undefined
-})
-
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   const { $financesService } = useNuxtApp()
-  if (canEditCategory.value && !event.data.categoryID) {
-    toast.add({ title: $t('categoryRequired'), color: 'error' })
-    return
-  }
   const executionDate = event.data.executionDate
     ? toExecutionDate(event.data.executionDate)
     : toExecutionDate(new Date())
@@ -76,7 +81,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       title: event.data.title,
       value: event.data.value,
       executionDate,
-      ...(canEditCategory.value ? { categoryID: event.data.categoryID, income: event.data.income } : {})
+      ...(canEditCategory.value ? { categoryID: event.data.categoryID || undefined, income: event.data.income } : {})
     })
     toast.add({
       title: 'Success',
@@ -88,10 +93,11 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     await $financesService.createTransaction({
       income: event.data.income,
       value: event.data.value,
-      categoryID: event.data.categoryID as string,
+      categoryID: event.data.categoryID || undefined,
       title: event.data.title,
       executionDate,
-      accountId: activeAccount.value.id
+      accountId: activeAccount.value.id,
+      status: event.data.pending ? 'PENDING' : 'OK'
     })
     toast.add({
       title: 'Success',
@@ -111,6 +117,7 @@ function resetState() {
     value: undefined,
     categoryID: undefined,
     income: false,
+    pending: false,
     executionDate: undefined
   })
 }
@@ -124,6 +131,7 @@ function openModal() {
       value: props.transaction.value,
       categoryID: props.transaction.categoryID ?? matchingCategory?.id,
       income: props.transaction.income,
+      pending: false,
       executionDate: props.transaction.executionDate ? parseLocalDate(props.transaction.executionDate) : undefined
     })
   } else {
@@ -204,7 +212,7 @@ defineExpose({ openModal, closeModal })
           :label="$t('category')"
         >
           <UInput
-            :model-value="props.transaction?.category"
+            :model-value="categoryLabel(props.transaction?.category, props.transaction?.categoryKey)"
             disabled
             class="w-full"
           />
@@ -215,6 +223,18 @@ defineExpose({ openModal, closeModal })
           name="executionDate"
         >
           <UInputDate v-model="state.executionDate" :locale="localeTag" />
+        </UFormField>
+
+        <UFormField
+          v-if="!state.id"
+          :label="$t('pendingTransaction')"
+          name="pending"
+          :help="$t('pendingTransactionHelp')"
+        >
+          <div class="flex items-center gap-3">
+            <USwitch v-model="state.pending" />
+            <span class="text-sm text-muted">{{ state.pending ? $t('transactionStatus.pending') : $t('transactionStatus.ok') }}</span>
+          </div>
         </UFormField>
 
         <div class="flex justify-end gap-2">

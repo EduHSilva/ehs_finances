@@ -21,6 +21,8 @@ const progressLabel = computed(() =>
 const emit = defineEmits<{
   (e: 'edit' | 'delete' | 'confirm', recurrence: Recurrence): void
 }>()
+
+const categoryLabel = useCategoryLabel()
 </script>
 
 <template>
@@ -37,7 +39,7 @@ const emit = defineEmits<{
       </div>
 
       <div class="text-sm text-muted">
-        {{ props.recurrence.category }}
+        {{ categoryLabel(props.recurrence.category, props.recurrence.categoryKey) }}
       </div>
 
       <div class="relative w-full">

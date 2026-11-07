@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
-import type { MonthlyGoal, MonthlyGoalMode } from '~/types'
+import type { Category, MonthlyGoal, MonthlyGoalMode, Transaction } from '~/types'
 import type { MonthlyGoalRequest } from '~/services/financesService'
 import DashLayout from '~/layouts/DashLayout.vue'
 import CustomHeader from '~/components/CustomHeader.vue'
+import CategoryGoalReport from '~/components/goals/CategoryGoalReport.vue'
 
 const { activeAccount, loadAccounts } = useFinancialAccounts()
 const { $financesService } = useNuxtApp()
@@ -13,6 +14,8 @@ const toast = useToast()
 const { t, locale } = useI18n()
 const currentMonth = ref(new Date())
 const monthlyIncome = ref(0)
+const categories = ref<Category[]>([])
+const monthTransactions = ref<Transaction[]>([])
 const newGoalOpen = ref(false)
 const contributionOpen = ref(false)
 const selectedGoal = ref<MonthlyGoal | null>(null)
@@ -57,26 +60,75 @@ function realizedFor(goal: MonthlyGoal) {
 const expectedTotal = computed(() => accountGoals.value.reduce((total, goal) => total + expectedFor(goal), 0))
 const realizedTotal = computed(() => accountGoals.value.reduce((total, goal) => total + realizedFor(goal), 0))
 
+const categoryReport = computed(() => {
+  const realizedByCategory = new Map<string, number>()
+  for (const transaction of monthTransactions.value) {
+    if (transaction.income || transaction.status !== 'OK' || !transaction.categoryID) continue
+    if (monthOf(transaction.executionDate) !== monthKey.value) continue
+    realizedByCategory.set(transaction.categoryID, (realizedByCategory.get(transaction.categoryID) || 0) + transaction.value)
+  }
+  const income = monthlyIncome.value
+  return categories.value
+    .filter(category => !category.income && realizedByCategory.has(category.id))
+    .map((category) => {
+      const realized = realizedByCategory.get(category.id) || 0
+      const expected = category.goal > 0 ? income * category.goal / 100 : 0
+      return {
+        id: category.id,
+        title: category.title,
+        defaultKey: category.defaultKey,
+        color: category.color,
+        goal: category.goal,
+        expected,
+        realized,
+        progress: expected > 0 ? Math.min(realized / expected * 100, 100) : 0,
+        achieved: expected > 0 ? realized / expected * 100 : null,
+        share: income > 0 ? realized / income * 100 : null
+      }
+    })
+    .sort((a, b) => b.realized - a.realized)
+})
+
+function monthOf(value?: string | null) {
+  return value ? /^(\d{4}-\d{2})/.exec(value)?.[1] || '' : ''
+}
+
+async function loadTransactions(accountId: string) {
+  const size = 200
+  const transactions: Transaction[] = []
+  let page = 0
+  let total = 0
+  do {
+    const response = await $financesService.getTransactions(accountId, page, size)
+    transactions.push(...response.data.items)
+    total = response.data.total
+    page++
+  } while (transactions.length < total && page < 50)
+  return transactions
+}
+
+function incomeForMonth(transactions: Transaction[]) {
+  return transactions
+    .filter(transaction => transaction.income && transaction.status === 'OK' && monthOf(transaction.executionDate) === monthKey.value)
+    .reduce((total, transaction) => total + transaction.value, 0)
+}
+
 let refreshSequence = 0
 async function refreshGoals() {
   const account = activeAccount.value
   if (!account) return
   const sequence = ++refreshSequence
-  await load(account.id, monthKey.value)
+  const [, transactions, categoryResponse] = await Promise.all([
+    load(account.id, monthKey.value),
+    loadTransactions(account.id),
+    $financesService.getCategories()
+  ])
   if (sequence !== refreshSequence || activeAccount.value?.id !== account.id) return
-  if (goals.value.length) {
-    monthlyIncome.value = summaries.value[goals.value[0]!.id]?.incomeBase || 0
-    return
-  }
-  const transactions = await $financesService.getTransactions(account.id, 0, 200)
-  if (sequence !== refreshSequence || activeAccount.value?.id !== account.id) return
-  monthlyIncome.value = transactions.data.items
-    .filter((transaction) => {
-      if (!transaction.income || transaction.status !== 'OK' || !transaction.executionDate) return false
-      const date = new Date(transaction.executionDate)
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` === monthKey.value
-    })
-    .reduce((total, transaction) => total + transaction.value, 0)
+  categories.value = categoryResponse.data.items
+  monthTransactions.value = transactions
+  monthlyIncome.value = goals.value.length
+    ? summaries.value[goals.value[0]!.id]?.incomeBase || 0
+    : incomeForMonth(transactions)
 }
 
 watch(() => [activeAccount.value?.id, monthKey.value], () => {
@@ -295,6 +347,8 @@ const modeItems = computed(() => [
             <p class="mt-1 text-sm text-muted">{{ $t('createFirstGoal') }}</p>
             <UButton class="mt-4" icon="i-lucide-plus" :label="$t('newGoal')" @click="openGoalEditor()" />
           </UPageCard>
+
+          <CategoryGoalReport :rows="categoryReport" :income="monthlyIncome" :loading="loading" />
         </div>
 
         <UModal v-model:open="newGoalOpen" :title="editingGoal ? $t('editGoal') : $t('newGoal')" :description="$t('newGoalDescription')">

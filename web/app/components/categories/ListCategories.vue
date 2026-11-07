@@ -12,6 +12,8 @@ const props = defineProps({
 const emit = defineEmits<{
   (e: 'edit' | 'delete', category: Category): void
 }>()
+
+const categoryLabel = useCategoryLabel()
 </script>
 
 <template>
@@ -28,7 +30,7 @@ const emit = defineEmits<{
         <div class="flex items-center justify-between gap-3">
           <div>
             <p class="text-sm font-medium">
-              {{ category.title }}
+              {{ categoryLabel(category.title, category.defaultKey) }}
             </p>
 
             <div class="flex items-center gap-1.5 text-xs text-muted">

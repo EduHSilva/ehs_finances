@@ -10,6 +10,12 @@ const colorMode = useColorMode()
 const user = useUser()
 const username = computed(() => user.value?.username || '')
 
+async function logout() {
+  getTokenCookie().value = null
+  user.value = null
+  await navigateTo('/auth/login')
+}
+
 const items = computed<DropdownMenuItem[][]>(() => [[{
   type: 'label',
   label: username.value
@@ -44,6 +50,11 @@ const items = computed<DropdownMenuItem[][]>(() => [[{
       colorMode.preference = 'system'
     }
   }]
+}], [{
+  label: $t('logout'),
+  icon: 'i-lucide-log-out',
+  color: 'error',
+  onSelect: () => logout()
 }]])
 </script>
 

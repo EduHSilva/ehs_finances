@@ -91,6 +91,10 @@ const items = ref([
   {
     label: $t('recreation'),
     id: 'RECREATION'
+  },
+  {
+    label: $t('investment'),
+    id: 'INVESTMENT'
   }]
 )
 

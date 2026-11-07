@@ -90,6 +90,7 @@ export interface Transaction {
   status: TransactionStatus
   categoryID?: string
   category?: string
+  categoryKey?: string | null
   accountId?: string
   classification?: string
 }
@@ -101,6 +102,7 @@ export interface Category {
   goal: number
   color: string
   income: boolean
+  defaultKey?: string | null
 }
 
 export interface Recurrence {
@@ -108,6 +110,7 @@ export interface Recurrence {
   title: string
   categoryID?: string
   category?: string
+  categoryKey?: string | null
   value: number
   status?: RecurrenceStatus
   income: boolean
@@ -116,17 +119,6 @@ export interface Recurrence {
   installments?: number
   payed?: number
   accountId?: string
-}
-
-export type InvestmentMovementType = 'CONTRIBUTION' | 'WITHDRAWAL'
-
-export interface InvestmentMovement {
-  id: string
-  accountId: string
-  type: InvestmentMovementType
-  amount: number
-  date: string
-  description?: string | null
 }
 
 export interface InvestmentSummary {
@@ -193,4 +185,3 @@ export interface Notification {
   body: string
   date: string
 }
-

@@ -1,4 +1,4 @@
-import type { CashflowProjection, Category, DashboardPending, FinancePreferences, FinancialAccount, GoalContribution, InvestmentMovement, InvestmentMovementType, InvestmentSummary, MonthlyGoal, MonthlyGoalSummary, Recurrence, Transaction } from '~/types'
+import type { CashflowProjection, Category, DashboardPending, FinancePreferences, FinancialAccount, GoalContribution, InvestmentSummary, MonthlyGoal, MonthlyGoalSummary, Recurrence, Transaction } from '~/types'
 import type { DefaultResponse, Page } from '~/utils/types'
 import { getTokenCookie } from '~/utils/util'
 
@@ -20,11 +20,12 @@ export interface MonthlyGoalRequest {
 export interface CreateTransactionRequest {
   income: boolean
   value: number
-  categoryID: string
+  categoryID?: string
   title: string
   recurrencyID?: string
   executionDate: string
   accountId: string
+  status?: 'OK' | 'PENDING'
 }
 
 export interface UpdateTransactionRequest {
@@ -33,14 +34,6 @@ export interface UpdateTransactionRequest {
   executionDate?: string
   categoryID?: string
   income?: boolean
-}
-
-export interface InvestmentMovementRequest {
-  accountId: string
-  type: InvestmentMovementType
-  amount: number
-  date: string
-  description?: string
 }
 
 export interface CreateAccountRequest {
@@ -121,10 +114,7 @@ export interface FinancesService {
   getTransactionImportAudit(id: string): Promise<DefaultResponse<TransactionImportAudit[]>>
   confirmRecurrence(id: string): Promise<DefaultResponse<Recurrence>>
   getPending(accountId: string, days?: number): Promise<DefaultResponse<DashboardPending>>
-  getInvestments(accountId: string): Promise<DefaultResponse<InvestmentMovement[]>>
   getInvestmentSummary(accountId: string): Promise<DefaultResponse<InvestmentSummary>>
-  createInvestmentMovement(movement: InvestmentMovementRequest): Promise<DefaultResponse<InvestmentMovement>>
-  deleteInvestmentMovement(id: string): Promise<DefaultResponse<void>>
   getGoals(accountId: string, periodMonth: string): Promise<DefaultResponse<Page<MonthlyGoal>>>
   createGoal(goal: MonthlyGoalRequest): Promise<DefaultResponse<MonthlyGoal>>
   updateGoal(id: string, goal: MonthlyGoalRequest): Promise<DefaultResponse<MonthlyGoal>>
@@ -214,7 +204,8 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
       headers: authHeaders(), method: 'POST', body: {
         income: transaction.income, value: transaction.value, categoryID: transaction.categoryID,
         title: transaction.title, recurrencyID: transaction.recurrencyID,
-        executionDate: transaction.executionDate, accountId: transaction.accountId
+        executionDate: transaction.executionDate, accountId: transaction.accountId,
+        status: transaction.status
       }
     }),
     previewStatementImport: request => $fetch(`${baseUrl}transactions/import/preview`, {
@@ -253,17 +244,8 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
     getPending: (accountId, days = 30) => $fetch(`${baseUrl}dashboard/pending`, {
       headers: authHeaders(), query: { accountId, days }
     }),
-    getInvestments: accountId => $fetch(`${baseUrl}investments`, {
+    getInvestmentSummary: accountId => $fetch(`${baseUrl}dashboard/investments`, {
       headers: authHeaders(), query: { accountId }
-    }),
-    getInvestmentSummary: accountId => $fetch(`${baseUrl}investments/summary`, {
-      headers: authHeaders(), query: { accountId }
-    }),
-    createInvestmentMovement: movement => $fetch(`${baseUrl}investments`, {
-      headers: authHeaders(), method: 'POST', body: movement
-    }),
-    deleteInvestmentMovement: id => $fetch(`${baseUrl}investments/${id}`, {
-      headers: authHeaders(), method: 'DELETE'
     })
   }
 }

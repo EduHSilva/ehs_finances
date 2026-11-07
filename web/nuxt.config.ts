@@ -5,6 +5,9 @@ const publicApiUrl = (globalThis as unknown as {
 const appBaseURL = (globalThis as unknown as {
   process?: { env?: Record<string, string | undefined> }
 }).process?.env?.NUXT_APP_BASE_URL || '/'
+const ofxConverterUrl = (globalThis as unknown as {
+  process?: { env?: Record<string, string | undefined> }
+}).process?.env?.NUXT_PUBLIC_OFX_CONVERTER_URL || 'https://meuofx.com/'
 
 export default defineNuxtConfig({
   modules: [
@@ -28,7 +31,8 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiUrl: publicApiUrl
+      apiUrl: publicApiUrl,
+      ofxConverterUrl
     }
   },
 

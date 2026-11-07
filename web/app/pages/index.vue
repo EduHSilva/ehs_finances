@@ -1,89 +1,92 @@
 <script setup lang="ts">
-import * as z from 'zod'
-import type { FormSubmitEvent, AuthFormField } from '@nuxt/ui'
 import { useUser } from '~/plugins/userService'
 
-const toast = useToast()
+const user = useUser()
+const { t } = useI18n()
 
-const fields: AuthFormField[] = [{
-  name: 'email',
-  type: 'email',
-  label: 'Email',
-  placeholder: 'Enter your email',
-  required: true
+const links = computed(() => user.value
+  ? [{
+      label: t('landingDashboard'),
+      to: '/dashboard',
+      size: 'xl' as const,
+      trailingIcon: 'i-lucide-arrow-right'
+    }]
+  : [{
+      label: t('login'),
+      to: '/auth/login',
+      size: 'xl' as const,
+      color: 'neutral' as const,
+      variant: 'outline' as const
+    }, {
+      label: t('createAccount'),
+      to: '/auth/register',
+      size: 'xl' as const,
+      trailingIcon: 'i-lucide-arrow-right'
+    }])
+
+const features = computed(() => [{
+  icon: 'i-lucide-wallet-cards',
+  title: t('landingFeatureAccountsTitle'),
+  description: t('landingFeatureAccountsDescription')
 }, {
-  name: 'password',
-  label: 'Password',
-  type: 'password',
-  placeholder: 'Enter your password',
-  required: true
+  icon: 'i-lucide-receipt',
+  title: t('landingFeatureTransactionsTitle'),
+  description: t('landingFeatureTransactionsDescription')
 }, {
-  name: 'remember',
-  label: 'Remember me',
-  type: 'checkbox'
-}]
-
-const providers = [{
-  label: 'Google',
-  icon: 'i-simple-icons-google',
-  onClick: () => {
-    toast.add({ title: 'Google', description: 'Login with Google' })
-  }
+  icon: 'i-lucide-target',
+  title: t('landingFeatureGoalsTitle'),
+  description: t('landingFeatureGoalsDescription')
 }, {
-  label: 'GitHub',
-  icon: 'i-simple-icons-github',
-  onClick: () => {
-    toast.add({ title: 'GitHub', description: 'Login with GitHub' })
-  }
-}]
-
-const schema = z.object({
-  email: z.email('Invalid email'),
-  password: z.string('Password is required').min(8, 'Must be at least 8 characters')
-})
-
-type Schema = z.output<typeof schema>
-
-async function onSubmit(payload: FormSubmitEvent<Schema>) {
-  const { $userService } = useNuxtApp()
-  try {
-    const data = await $userService.login(payload.data.email, payload.data.password)
-    if (!data) {
-      toast.add({
-        title: $t('attention'),
-        description: $t('loginError'),
-        icon: 'i-lucide-calendar-days'
-      })
-    } else {
-      const token = getTokenCookie()
-      console.log(data.data)
-      token.value = { token: data.data.token }
-      useUser().value = data.data
-      navigateTo('/dashboard')
-    }
-  } catch (e) {
-    console.error(e)
-    toast.add({
-      title: $t('attention'),
-      description: $t('loginError'),
-      icon: 'i-lucide-calendar-days'
-    })
-  }
-}
+  icon: 'i-lucide-line-chart',
+  title: t('landingFeatureProjectionTitle'),
+  description: t('landingFeatureProjectionDescription')
+}])
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center gap-4 p-4">
-    <UPageCard class="w-full max-w-md">
-      <UAuthForm
-        :schema="schema"
-        title="Login"
-        description="Enter your credentials to access your account."
-        icon="i-lucide-user"
-        :fields="fields"
-        :providers="providers"
-        @submit="onSubmit"
-      />
-    </UPageCard>
+  <div class="min-h-screen bg-default">
+    <header class="sticky top-0 z-10 border-b border-default bg-default/80 backdrop-blur">
+      <div class="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-6 py-4">
+        <NuxtLink to="/" aria-label="EHS Finances">
+          <BrandLogo />
+        </NuxtLink>
+
+        <div class="flex items-center gap-2">
+          <UButton v-if="!user" to="/auth/login" variant="ghost" color="neutral" :label="$t('login')" />
+          <UButton
+            :to="user ? '/dashboard' : '/auth/register'"
+            :label="user ? $t('landingDashboard') : $t('createAccount')"
+            :trailing-icon="user ? undefined : 'i-lucide-arrow-right'"
+          />
+        </div>
+      </div>
+    </header>
+
+    <UPageHero
+      :headline="$t('landingHeadline')"
+      :title="$t('landingTitle')"
+      :description="$t('landingDescription')"
+      :links="links"
+    />
+
+    <UPageSection
+      :title="$t('landingFeaturesTitle')"
+      :description="$t('landingFeaturesDescription')"
+      :features="features"
+    />
+
+    <UPageCTA
+      :title="$t('landingCtaTitle')"
+      :description="$t('landingCtaDescription')"
+      :links="links"
+      variant="subtle"
+    />
+
+    <footer class="border-t border-default">
+      <div class="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 px-6 py-6 text-sm text-muted sm:flex-row">
+        <BrandLogo />
+        <span>{{ new Date().getFullYear() }} · {{ $t('landingFooter') }}</span>
+      </div>
+    </footer>
   </div>
 </template>

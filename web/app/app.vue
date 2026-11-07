@@ -2,34 +2,35 @@
 const colorMode = useColorMode()
 const appBase = useRuntimeConfig().app.baseURL
 
-const color = computed(() => colorMode.value === 'dark' ? '#1b1718' : 'white')
+const color = computed(() => colorMode.value === 'dark' ? '#18181B' : '#4F46E5')
 
 useHead({
+  titleTemplate: (title) => (title ? `${title} · EHS Finances` : 'EHS Finances — Controle financeiro'),
   meta: [
     { charset: 'utf-8' },
     { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-    { key: 'theme-color', name: 'theme-color', content: color }
+    { key: 'theme-color', name: 'theme-color', content: color },
+    { name: 'apple-mobile-web-app-title', content: 'EHS Finances' }
   ],
   link: [
-    { rel: 'icon', href: `${appBase}favicon.ico` },
+    { rel: 'icon', type: 'image/svg+xml', href: `${appBase}favicon.svg` },
+    { rel: 'icon', href: `${appBase}favicon.ico`, sizes: '32x32' },
     { rel: 'manifest', href: `${appBase}manifest.webmanifest` },
-    { rel: 'apple-touch-icon', href: `${appBase}favicon.ico` }
+    { rel: 'apple-touch-icon', href: `${appBase}apple-touch-icon.png` }
   ],
   htmlAttrs: {
-    lang: 'en'
+    lang: 'pt-BR'
   }
 })
 
-const title = 'Finances'
-const description = 'A professional dashboard template built with Nuxt UI, featuring multiple pages, data visualization, and comprehensive management capabilities for creating powerful admin interfaces.'
+const title = 'EHS Finances — Controle financeiro'
+const description = 'Controle contas, transações, metas mensais e previsibilidade de caixa em um só painel.'
 
 useSeoMeta({
-  title,
   description,
   ogTitle: title,
   ogDescription: description,
-  ogImage: 'https://ui.nuxt.com/assets/templates/nuxt/dashboard-light.png',
-  twitterImage: 'https://ui.nuxt.com/assets/templates/nuxt/dashboard-light.png',
+  ogLocale: 'pt_BR',
   twitterCard: 'summary_large_image'
 })
 </script>
