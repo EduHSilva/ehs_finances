@@ -38,12 +38,17 @@ const state = reactive<Partial<Schema>>({
 })
 
 const canEditCategory = computed(() => !state.id || !props.transaction?.categoryID)
+const NO_CATEGORY = '__no_category__'
 const categoryOptions = computed(() => [
-  { id: '', title: t('noCategory') },
+  { id: NO_CATEGORY, title: t('noCategory') },
   ...props.categories
     .filter(category => category.income === state.income)
     .map(category => ({ id: category.id, title: categoryLabel(category.title, category.defaultKey) }))
 ])
+
+function selectedCategoryId(value?: string) {
+  return !value || value === NO_CATEGORY ? undefined : value
+}
 
 watch(
   () => props.transaction,
@@ -81,7 +86,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       title: event.data.title,
       value: event.data.value,
       executionDate,
-      ...(canEditCategory.value ? { categoryID: event.data.categoryID || undefined, income: event.data.income } : {})
+      ...(canEditCategory.value ? { categoryID: selectedCategoryId(event.data.categoryID), income: event.data.income } : {})
     })
     toast.add({
       title: 'Success',
@@ -93,7 +98,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     await $financesService.createTransaction({
       income: event.data.income,
       value: event.data.value,
-      categoryID: event.data.categoryID || undefined,
+      categoryID: selectedCategoryId(event.data.categoryID),
       title: event.data.title,
       executionDate,
       accountId: activeAccount.value.id,

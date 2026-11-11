@@ -8,6 +8,7 @@ import DashLayout from '~/layouts/DashLayout.vue'
 import CustomHeader from '~/components/CustomHeader.vue'
 import AddTransactionModal from '~/components/transactions/AddTransactionModal.vue'
 import ImportStatementModal from '~/components/transactions/ImportStatementModal.vue'
+import ConfirmValueModal from '~/components/ConfirmValueModal.vue'
 
 const UButton = resolveComponent('UButton')
 const UBadge = resolveComponent('UBadge')
@@ -25,6 +26,8 @@ const rowSelection = ref({ 1: true })
 const { $financesService } = useNuxtApp()
 const { activeAccount, loadAccounts } = useFinancialAccounts()
 const categoryLabel = useCategoryLabel()
+const { t, locale } = useI18n()
+const toast = useToast()
 
 const data = ref<Transaction[]>([])
 
@@ -33,9 +36,18 @@ async function confirmDelete(transaction: Transaction) {
   await refresh()
 }
 
-async function confirmTransaction(transaction: Transaction) {
-  await $financesService.confirmTransaction(transaction.id)
-  await refresh()
+const confirmModalRef = ref<InstanceType<typeof ConfirmValueModal> | null>(null)
+
+function askConfirm(transaction: Transaction) {
+  confirmModalRef.value?.openModal(transaction.value, {
+    title: t('confirmTransactionTitle'),
+    description: `${transaction.title} · ${formatDate(transaction.executionDate, locale.value)}`,
+    onConfirm: async (value) => {
+      await $financesService.confirmTransaction(transaction.id, value)
+      await refresh()
+      toast.add({ title: t('transactionConfirmed'), color: 'success' })
+    }
+  })
 }
 
 const modalRef = ref<InstanceType<typeof AddTransactionModal> | null>(null)
@@ -83,6 +95,14 @@ async function refresh() {
     if (!items.length) break
     page++
   }
+  const categoryByTitle = new Map(categories.value.map(category => [category.title, category.id]))
+  const categoryByKey = new Map(categories.value.filter(category => category.defaultKey).map(category => [category.defaultKey!, category.id]))
+  for (const transaction of all) {
+    if (!transaction.categoryID) {
+      transaction.categoryID = categoryByTitle.get(transaction.category || '')
+        ?? (transaction.categoryKey ? categoryByKey.get(transaction.categoryKey) : undefined)
+    }
+  }
   data.value = all
 }
 
@@ -100,7 +120,7 @@ function getRowItems(row: Row<Transaction>) {
           label: $t('confirm'),
           icon: 'i-lucide-check',
           onSelect() {
-            confirmTransaction(row.original)
+            askConfirm(row.original)
           }
         }]
       : []),
@@ -237,6 +257,22 @@ const columns = computed<TableColumn<Transaction>[]>(() => [
   }
 ])
 
+const categoryFilter = ref('all')
+const categoryFilterOptions = computed(() => [
+  { label: t('all'), value: 'all' },
+  ...categories.value.map(category => ({
+    label: categoryLabel(category.title, category.defaultKey),
+    value: category.id
+  })),
+  { label: t('noCategory'), value: 'none' }
+])
+
+const filteredData = computed(() => {
+  if (categoryFilter.value === 'all') return data.value
+  if (categoryFilter.value === 'none') return data.value.filter(transaction => !transaction.categoryID)
+  return data.value.filter(transaction => transaction.categoryID === categoryFilter.value)
+})
+
 const statusFilter = ref('all')
 
 watch(() => statusFilter.value, (newVal) => {
@@ -309,6 +345,7 @@ const pagination = ref({
           :categories="categories"
           :refresh="refresh"
         />
+        <ConfirmValueModal ref="confirmModalRef" />
         <div class="flex flex-wrap items-center justify-between gap-1.5">
           <UInput
             v-model="title"
@@ -318,6 +355,12 @@ const pagination = ref({
           />
 
           <div class="flex flex-wrap items-center gap-1.5">
+            <USelect
+              v-model="categoryFilter"
+              :items="categoryFilterOptions"
+              :placeholder="$t('filterCategory')"
+              class="min-w-44"
+            />
             <USelect
               v-model="statusFilter"
               :items="[
@@ -371,7 +414,7 @@ const pagination = ref({
             getPaginationRowModel: getPaginationRowModel()
           }"
           class="shrink-0"
-          :data="data"
+          :data="filteredData"
           :columns="columns"
           :empty="$t('noData')"
           :ui="{

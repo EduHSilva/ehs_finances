@@ -11,6 +11,8 @@ export interface MonthlyGoalRequest {
   accountId: string
   mode: 'FIXED' | 'PERCENT_INCOME'
   amount: number
+  initialBalance?: number | null
+  objective?: number | null
   periodMonth: string
   dtInicio?: string | null
   dtFim?: string | null
@@ -105,14 +107,14 @@ export interface FinancesService {
   editRecurrence(id: string, recurrence: Recurrence): Promise<DefaultResponse<Recurrence>>
   getTransactions(accountId?: string, page?: number, size?: number): Promise<DefaultResponse<Page<Transaction>>>
   deleteTransaction(id: string): Promise<DefaultResponse<void>>
-  confirmTransaction(id: string): Promise<DefaultResponse<Transaction>>
+  confirmTransaction(id: string, value?: number): Promise<DefaultResponse<Transaction>>
   editTransaction(id: string, transaction: UpdateTransactionRequest): Promise<DefaultResponse<Transaction>>
   createTransaction(transaction: CreateTransactionRequest): Promise<DefaultResponse<Transaction>>
   previewStatementImport(request: StatementImportRequest): Promise<DefaultResponse<StatementImportPreview>>
   confirmStatementImport(request: StatementImportRequest): Promise<DefaultResponse<StatementImportResult>>
   reviewImportedTransaction(id: string, review: ReviewImportedTransactionRequest): Promise<DefaultResponse<Transaction | null>>
   getTransactionImportAudit(id: string): Promise<DefaultResponse<TransactionImportAudit[]>>
-  confirmRecurrence(id: string): Promise<DefaultResponse<Recurrence>>
+  confirmRecurrence(id: string, value?: number): Promise<DefaultResponse<Recurrence>>
   getPending(accountId: string, days?: number): Promise<DefaultResponse<DashboardPending>>
   getInvestmentSummary(accountId: string): Promise<DefaultResponse<InvestmentSummary>>
   getGoals(accountId: string, periodMonth: string): Promise<DefaultResponse<Page<MonthlyGoal>>>
@@ -179,8 +181,8 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
         status: recurrence.status
       }
     }),
-    confirmRecurrence: id => $fetch(`${baseUrl}recurrences/${id}/confirm`, {
-      headers: authHeaders(), method: 'POST'
+    confirmRecurrence: (id, value) => $fetch(`${baseUrl}recurrences/${id}/confirm`, {
+      headers: authHeaders(), method: 'POST', body: value == null ? undefined : { value }
     }),
     getTransactions: (accountId, page = 0, size = 200) => $fetch(`${baseUrl}transactions`, {
       headers: authHeaders(), query: { accountId, page, size }
@@ -188,8 +190,8 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
     deleteTransaction: id => $fetch(`${baseUrl}transactions/${id}`, {
       headers: authHeaders(), method: 'DELETE'
     }),
-    confirmTransaction: id => $fetch(`${baseUrl}transactions/${id}/confirm`, {
-      headers: authHeaders(), method: 'POST'
+    confirmTransaction: (id, value) => $fetch(`${baseUrl}transactions/${id}/confirm`, {
+      headers: authHeaders(), method: 'POST', body: value == null ? undefined : { value }
     }),
     editTransaction: (id, transaction) => $fetch(`${baseUrl}transactions/${id}`, {
       headers: authHeaders(), method: 'PUT', body: {

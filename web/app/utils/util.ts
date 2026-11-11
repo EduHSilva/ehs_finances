@@ -12,9 +12,9 @@ export function formatCurrency(value: number) {
   return 'R$ ' + value.toFixed(2)
 }
 
-export function formatDate(value: string | Date) {
-  const { locale: appLocale } = useI18n()
-  const locale = appLocale.value === 'pt' ? 'pt-BR' : 'en-US'
+export function formatDate(value: string | Date, appLanguage?: string) {
+  const language = appLanguage ?? useI18n().locale.value
+  const locale = language === 'pt' ? 'pt-BR' : 'en-US'
   const datePart = typeof value === 'string' ? /^(\d{4}-\d{2}-\d{2})/.exec(value)?.[1] : undefined
   const date = datePart
     ? new Date(`${datePart}T12:00:00`)

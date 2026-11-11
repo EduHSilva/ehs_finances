@@ -25,6 +25,8 @@ const createSchema = z.object({
   title: z.string().trim().min(2),
   mode: z.enum(['FIXED', 'PERCENT_INCOME']),
   amount: z.coerce.number().positive(),
+  initialBalance: z.coerce.number().min(0).optional(),
+  objective: z.coerce.number().min(0).optional(),
   dtInicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   dtFim: z.union([z.literal(''), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)])
 }).refine(value => value.mode !== 'PERCENT_INCOME' || value.amount <= 100, {
@@ -42,7 +44,9 @@ const contributionSchema = z.object({
 type CreateSchema = z.output<typeof createSchema>
 type ContributionSchema = z.output<typeof contributionSchema>
 
-const createState = reactive<Partial<CreateSchema>>({ title: '', mode: 'FIXED', amount: undefined, dtInicio: '', dtFim: '' })
+const createState = reactive<Partial<CreateSchema>>({
+  title: '', mode: 'FIXED', amount: undefined, initialBalance: undefined, objective: undefined, dtInicio: '', dtFim: ''
+})
 const contributionState = reactive<Partial<ContributionSchema>>({ amount: undefined, date: '' })
 
 const monthKey = computed(() => `${currentMonth.value.getFullYear()}-${String(currentMonth.value.getMonth() + 1).padStart(2, '0')}`)
@@ -56,6 +60,28 @@ function expectedFor(goal: MonthlyGoal) {
 function realizedFor(goal: MonthlyGoal) {
   return summaries.value[goal.id]?.realized || 0
 }
+
+function initialBalanceFor(goal: MonthlyGoal) {
+  return summaries.value[goal.id]?.initialBalance ?? goal.initialBalance ?? 0
+}
+
+function savedFor(goal: MonthlyGoal) {
+  return summaries.value[goal.id]?.saved ?? goal.initialBalance ?? 0
+}
+
+function objectiveFor(goal: MonthlyGoal) {
+  return summaries.value[goal.id]?.objective ?? goal.objective ?? null
+}
+
+function objectiveProgressFor(goal: MonthlyGoal) {
+  return summaries.value[goal.id]?.objectiveProgress ?? 0
+}
+
+const initialBalanceEditable = computed(() => {
+  const goal = editingGoal.value
+  if (!goal) return true
+  return savedFor(goal) <= 0
+})
 
 const expectedTotal = computed(() => accountGoals.value.reduce((total, goal) => total + expectedFor(goal), 0))
 const realizedTotal = computed(() => accountGoals.value.reduce((total, goal) => total + realizedFor(goal), 0))
@@ -165,6 +191,8 @@ function openGoalEditor(goal?: MonthlyGoal) {
         title: goal.title,
         mode: goal.mode,
         amount: goal.amount,
+        initialBalance: goal.initialBalance ?? 0,
+        objective: goal.objective ?? undefined,
         dtInicio: goal.dtInicio || `${goal.periodMonth}-01`,
         dtFim: goal.dtFim || ''
       }
@@ -172,6 +200,8 @@ function openGoalEditor(goal?: MonthlyGoal) {
         title: '',
         mode: 'FIXED',
         amount: undefined,
+        initialBalance: undefined,
+        objective: undefined,
         dtInicio: monthBoundary('start'),
         dtFim: monthBoundary('end')
       })
@@ -193,6 +223,8 @@ async function onCreateGoal(event: FormSubmitEvent<CreateSchema>) {
     title: event.data.title,
     mode: event.data.mode,
     amount: event.data.amount,
+    initialBalance: event.data.initialBalance ?? 0,
+    objective: event.data.objective && event.data.objective > 0 ? event.data.objective : null,
     periodMonth: event.data.dtInicio.slice(0, 7),
     dtInicio: event.data.dtInicio,
     dtFim: event.data.dtFim || null,
@@ -203,7 +235,9 @@ async function onCreateGoal(event: FormSubmitEvent<CreateSchema>) {
     else await create(request, account.id, monthKey.value)
     newGoalOpen.value = false
     editingGoal.value = null
-    Object.assign(createState, { title: '', mode: 'FIXED', amount: undefined, dtInicio: '', dtFim: '' })
+    Object.assign(createState, {
+      title: '', mode: 'FIXED', amount: undefined, initialBalance: undefined, objective: undefined, dtInicio: '', dtFim: ''
+    })
     toast.add({ title: t(wasEditing ? 'goalUpdated' : 'goalCreated'), color: 'success', icon: 'i-lucide-check' })
   } catch {
     toast.add({ title: t('goalSaveFailed'), color: 'error' })
@@ -279,13 +313,19 @@ const modeItems = computed(() => [
         <div v-else class="space-y-4">
           <div class="grid gap-4 sm:grid-cols-3">
             <UPageCard variant="subtle" :title="$t('expectedThisMonth')">
-              <p class="text-2xl font-semibold">{{ formatCurrency(expectedTotal) }}</p>
+              <p class="text-2xl font-semibold">
+                {{ formatCurrency(expectedTotal) }}
+              </p>
             </UPageCard>
             <UPageCard variant="subtle" :title="$t('realizedThisMonth')">
-              <p class="text-2xl font-semibold text-primary">{{ formatCurrency(realizedTotal) }}</p>
+              <p class="text-2xl font-semibold text-primary">
+                {{ formatCurrency(realizedTotal) }}
+              </p>
             </UPageCard>
             <UPageCard variant="subtle" :title="$t('monthlyIncomeBase')">
-              <p class="text-2xl font-semibold">{{ formatCurrency(monthlyIncome) }}</p>
+              <p class="text-2xl font-semibold">
+                {{ formatCurrency(monthlyIncome) }}
+              </p>
             </UPageCard>
           </div>
 
@@ -300,7 +340,9 @@ const modeItems = computed(() => [
               <div class="space-y-4">
                 <div class="flex items-start justify-between gap-3">
                   <div>
-                    <h2 class="font-semibold text-highlighted">{{ goal.title }}</h2>
+                    <h2 class="font-semibold text-highlighted">
+                      {{ goal.title }}
+                    </h2>
                     <p class="text-sm text-muted">
                       {{ goal.mode === 'FIXED' ? $t('fixedMonthlyAmount') : `${goal.amount}% ${$t('ofIncome')}` }}
                     </p>
@@ -309,6 +351,9 @@ const modeItems = computed(() => [
                       <UBadge v-if="goal.recurring" size="xs" color="primary" variant="subtle" class="ml-1">
                         {{ $t('recurringGoal') }}
                       </UBadge>
+                    </p>
+                    <p v-if="initialBalanceFor(goal) > 0" class="text-xs text-muted">
+                      {{ $t('initialBalance') }}: {{ formatCurrency(initialBalanceFor(goal)) }}
                     </p>
                   </div>
                   <UDropdownMenu
@@ -324,10 +369,16 @@ const modeItems = computed(() => [
 
                 <div class="flex items-end justify-between gap-3">
                   <div>
-                    <p class="text-xs text-muted">{{ $t('realized') }}</p>
-                    <p class="text-xl font-semibold">{{ formatCurrency(realizedFor(goal)) }}</p>
+                    <p class="text-xs text-muted">
+                      {{ $t('realized') }}
+                    </p>
+                    <p class="text-xl font-semibold">
+                      {{ formatCurrency(realizedFor(goal)) }}
+                    </p>
                   </div>
-                  <p class="text-sm text-muted">{{ $t('expected') }} {{ formatCurrency(expectedFor(goal)) }}</p>
+                  <p class="text-sm text-muted">
+                    {{ $t('expected') }} {{ formatCurrency(expectedFor(goal)) }}
+                  </p>
                 </div>
 
                 <UProgress :model-value="expectedFor(goal) > 0 ? Math.min(realizedFor(goal) / expectedFor(goal) * 100, 100) : 0" />
@@ -337,14 +388,31 @@ const modeItems = computed(() => [
                   </span>
                   <UButton size="sm" variant="outline" icon="i-lucide-plus" :label="$t('recordRealization')" @click="openContribution(goal)" />
                 </div>
+
+                <div v-if="objectiveFor(goal)" class="space-y-1 border-t border-default pt-3">
+                  <div class="flex items-center justify-between gap-3 text-sm">
+                    <span class="text-muted">{{ $t('objective') }}</span>
+                    <span class="font-medium">
+                      {{ formatCurrency(savedFor(goal)) }} / {{ formatCurrency(objectiveFor(goal) || 0) }}
+                    </span>
+                  </div>
+                  <UProgress :model-value="Math.min(objectiveProgressFor(goal), 100)" />
+                  <p class="text-xs text-muted">
+                    {{ $t('objectiveProgress', { value: Math.round(objectiveProgressFor(goal)) }) }}
+                  </p>
+                </div>
               </div>
             </UPageCard>
           </div>
 
           <UPageCard v-else variant="subtle" class="py-8 text-center">
             <UIcon name="i-lucide-target" class="mx-auto mb-3 size-8 text-muted" />
-            <h2 class="font-semibold text-highlighted">{{ $t('noGoalsYet') }}</h2>
-            <p class="mt-1 text-sm text-muted">{{ $t('createFirstGoal') }}</p>
+            <h2 class="font-semibold text-highlighted">
+              {{ $t('noGoalsYet') }}
+            </h2>
+            <p class="mt-1 text-sm text-muted">
+              {{ $t('createFirstGoal') }}
+            </p>
             <UButton class="mt-4" icon="i-lucide-plus" :label="$t('newGoal')" @click="openGoalEditor()" />
           </UPageCard>
 
@@ -364,6 +432,31 @@ const modeItems = computed(() => [
                 <UInput v-model="createState.amount" type="number" min="0.01" :max="createState.mode === 'PERCENT_INCOME' ? 100 : undefined" step="0.01" class="w-full" />
               </UFormField>
               <div class="grid gap-4 sm:grid-cols-2">
+                <UFormField
+                  :label="$t('initialBalance')"
+                  name="initialBalance"
+                  :description="initialBalanceEditable ? $t('initialBalanceHelp') : $t('initialBalanceLocked')"
+                >
+                  <UInput
+                    v-model="createState.initialBalance"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    class="w-full"
+                    :disabled="!initialBalanceEditable"
+                  />
+                </UFormField>
+                <UFormField :label="$t('objective')" name="objective" :description="$t('objectiveHelp')">
+                  <UInput
+                    v-model="createState.objective"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    class="w-full"
+                  />
+                </UFormField>
+              </div>
+              <div class="grid gap-4 sm:grid-cols-2">
                 <UFormField :label="$t('startDate')" name="dtInicio" required>
                   <UInput v-model="createState.dtInicio" type="date" class="w-full" />
                 </UFormField>
@@ -371,7 +464,9 @@ const modeItems = computed(() => [
                   <UInput v-model="createState.dtFim" type="date" class="w-full" />
                 </UFormField>
               </div>
-              <p class="text-xs text-muted">{{ $t('goalAccountHelp', { account: activeAccount?.name || '' }) }}</p>
+              <p class="text-xs text-muted">
+                {{ $t('goalAccountHelp', { account: activeAccount?.name || '' }) }}
+              </p>
               <div class="flex justify-end gap-2">
                 <UButton color="neutral" variant="subtle" :label="$t('cancel')" @click="newGoalOpen = false; editingGoal = null" />
                 <UButton type="submit" :label="$t('save')" />

@@ -5,15 +5,19 @@ import ItemRecurrence from '~/components/recurrences/ItemRecurrence.vue'
 import ItemInstallments from '~/components/recurrences/ItemInstallments.vue'
 import type { Recurrence } from '~/types'
 import AddRecurrenceModal from '~/components/recurrences/AddRecurrenceModal.vue'
+import ConfirmValueModal from '~/components/ConfirmValueModal.vue'
 
 const data = ref()
 const recurrences = ref()
 const installmentsPurchases = ref()
 const { $financesService } = useNuxtApp()
 const { activeAccount, loadAccounts } = useFinancialAccounts()
+const { t } = useI18n()
+const toast = useToast()
 const categories = await $financesService.getCategories()
 
 const modalRef = ref<InstanceType<typeof AddRecurrenceModal> | null>(null)
+const confirmModalRef = ref<InstanceType<typeof ConfirmValueModal> | null>(null)
 
 const selectedRecurrence = ref<Recurrence | null>(null)
 
@@ -50,10 +54,18 @@ async function confirmDelete(recurrence: Recurrence) {
   await refresh()
 }
 
-async function confirmRecurrence(recurrence: Recurrence) {
+function confirmRecurrence(recurrence: Recurrence) {
   if (!recurrence.id) return
-  await $financesService.confirmRecurrence(recurrence.id)
-  await refresh()
+  confirmModalRef.value?.openModal(recurrence.value, {
+    title: t('confirmRecurrenceTitle'),
+    description: recurrence.title,
+    help: t('confirmRecurrenceHelp'),
+    onConfirm: async (value) => {
+      await $financesService.confirmRecurrence(recurrence.id!, value)
+      await refresh()
+      toast.add({ title: t('recurrenceConfirmed'), color: 'success' })
+    }
+  })
 }
 
 watch(() => activeAccount.value?.id, refresh, { immediate: true })
@@ -81,6 +93,7 @@ onMounted(() => loadAccounts().then(refresh))
           :refresh="refresh"
           :recurrency="selectedRecurrence"
         />
+        <ConfirmValueModal ref="confirmModalRef" />
         <div>
           <UPageCard
             variant="subtle"

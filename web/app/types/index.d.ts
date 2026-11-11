@@ -27,6 +27,8 @@ export interface MonthlyGoal {
   title: string
   mode: MonthlyGoalMode
   amount: number
+  initialBalance?: number | null
+  objective?: number | null
   periodMonth: string
   dtInicio?: string | null
   dtFim?: string | null
@@ -50,6 +52,10 @@ export interface MonthlyGoalSummary {
   realized: number
   difference: number
   progress: number
+  initialBalance?: number
+  objective?: number | null
+  saved?: number
+  objectiveProgress?: number | null
 }
 
 export interface CashflowProjection {
