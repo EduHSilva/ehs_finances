@@ -71,6 +71,7 @@ jobs:
           build-args: |
             NUXT_APP_BASE_URL=/app/finances/
             NUXT_PUBLIC_API_URL=
+            NUXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.FINANCES_GOOGLE_CLIENT_ID }}
           tags: |
             ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}:${{ github.sha }}

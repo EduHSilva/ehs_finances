@@ -30,6 +30,7 @@ docker compose -f docker-compose.prod.yml up -d
 - A rede externa padrão em produção é `microservices_backend`, alinhada ao compose de produção de `study` e `admin`. Se necessário, defina `EHS_MICROSERVICES_NETWORK` com o nome existente da rede Docker.
 - O serviço publica internamente a porta 80 e usa o alias `finances-ui`; não há porta host publicada. A rota `/app/finances/` do nginx dos microservices deve encaminhar para `finances-ui:80`.
 - O build fixa o base path `/app/finances/` e usa API same-origin (`/users` e `/finances`) via gateway.
+- Login Google: o `NUXT_PUBLIC_GOOGLE_CLIENT_ID` é compilado no bundle estático, então precisa existir no build (local: `FINANCES_GOOGLE_CLIENT_ID=... docker compose build`; CI: var de repositório `FINANCES_GOOGLE_CLIENT_ID`). Vazio = botão oculto.
 - Não são necessários segredos no compose do front.
 
 Rollback: execute novamente `pull` e `up -d` com `IMAGE_TAG` definido para a tag SHA anterior.

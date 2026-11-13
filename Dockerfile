@@ -19,9 +19,12 @@ COPY web/ ./
 # /finances e /users passam pelo gateway dos microservices.
 ARG NUXT_APP_BASE_URL=/app/finances/
 ARG NUXT_PUBLIC_API_URL=
+# Vazio esconde o botão "Entrar com Google" (o GSI só é carregado com client ID).
+ARG NUXT_PUBLIC_GOOGLE_CLIENT_ID=
 
 ENV NUXT_APP_BASE_URL=$NUXT_APP_BASE_URL
 ENV NUXT_PUBLIC_API_URL=$NUXT_PUBLIC_API_URL
+ENV NUXT_PUBLIC_GOOGLE_CLIENT_ID=$NUXT_PUBLIC_GOOGLE_CLIENT_ID
 
 RUN pnpm generate
 
