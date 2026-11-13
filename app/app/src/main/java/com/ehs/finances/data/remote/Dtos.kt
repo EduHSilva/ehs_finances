@@ -11,6 +11,9 @@ data class LoginRequest(
     val email: String? = null,
     val password: String? = null,
     val tokenGmail: String? = null,
+    // O users exige `app` no login; sem ele a API responde 403.
+    // Sem default de propósito: o Json usa encodeDefaults=false e o campo sumiria do corpo.
+    val app: String,
 )
 
 @Serializable

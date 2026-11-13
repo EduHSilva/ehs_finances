@@ -8,6 +8,9 @@ const appBaseURL = (globalThis as unknown as {
 const ofxConverterUrl = (globalThis as unknown as {
   process?: { env?: Record<string, string | undefined> }
 }).process?.env?.NUXT_PUBLIC_OFX_CONVERTER_URL || 'https://meuofx.com/'
+const googleClientId = (globalThis as unknown as {
+  process?: { env?: Record<string, string | undefined> }
+}).process?.env?.NUXT_PUBLIC_GOOGLE_CLIENT_ID
 
 export default defineNuxtConfig({
   modules: [
@@ -32,7 +35,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiUrl: publicApiUrl,
-      ofxConverterUrl
+      ofxConverterUrl,
+      googleClientId
     }
   },
 

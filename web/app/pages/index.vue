@@ -85,7 +85,10 @@ const features = computed(() => [{
     <footer class="border-t border-default">
       <div class="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 px-6 py-6 text-sm text-muted sm:flex-row">
         <BrandLogo />
-        <span>{{ new Date().getFullYear() }} · {{ $t('landingFooter') }}</span>
+        <div class="flex items-center gap-3">
+          <a href="/app/privacidade/" class="hover:underline">{{ $t('privacyPolicy') }}</a>
+          <span>{{ new Date().getFullYear() }} · {{ $t('landingFooter') }}</span>
+        </div>
       </div>
     </footer>
   </div>

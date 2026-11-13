@@ -1,6 +1,7 @@
 import type { CashflowProjection, Category, DashboardPending, FinancePreferences, FinancialAccount, GoalContribution, InvestmentSummary, MonthlyGoal, MonthlyGoalSummary, Recurrence, Transaction } from '~/types'
 import type { DefaultResponse, Page } from '~/utils/types'
 import { getTokenCookie } from '~/utils/util'
+import { apiFetch } from '~/utils/apiFetch'
 
 export interface FinancesServiceOptions {
   apiUrl: string | unknown
@@ -131,34 +132,34 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
   const authHeaders = () => ({ Authorization: `Bearer ${getTokenCookie().value?.token || ''}` })
 
   return {
-    getPreferences: () => $fetch(`${baseUrl}preferences`, { headers: authHeaders() }),
-    updatePreferences: preferences => $fetch(`${baseUrl}preferences`, {
+    getPreferences: () => apiFetch(`${baseUrl}preferences`, { headers: authHeaders() }),
+    updatePreferences: preferences => apiFetch(`${baseUrl}preferences`, {
       headers: authHeaders(), method: 'PUT', body: preferences
     }),
-    getAccounts: () => $fetch(`${baseUrl}accounts`, { headers: authHeaders() }),
-    createAccount: account => $fetch(`${baseUrl}accounts`, {
+    getAccounts: () => apiFetch(`${baseUrl}accounts`, { headers: authHeaders() }),
+    createAccount: account => apiFetch(`${baseUrl}accounts`, {
       headers: authHeaders(), method: 'POST', body: account
     }),
-    getCategories: () => $fetch(`${baseUrl}categories?page=0&size=200`, { headers: authHeaders() }),
-    createCategory: category => $fetch(`${baseUrl}categories`, {
+    getCategories: () => apiFetch(`${baseUrl}categories?page=0&size=200`, { headers: authHeaders() }),
+    createCategory: category => apiFetch(`${baseUrl}categories`, {
       headers: authHeaders(), method: 'POST', body: {
         title: category.title, color: category.color, goal: category.goal,
         classification: category.classification, income: category.income
       }
     }),
-    deleteCategory: id => $fetch(`${baseUrl}categories/${id}`, {
+    deleteCategory: id => apiFetch(`${baseUrl}categories/${id}`, {
       headers: authHeaders(), method: 'DELETE'
     }),
-    editCategory: (id, category) => $fetch(`${baseUrl}categories/${id}`, {
+    editCategory: (id, category) => apiFetch(`${baseUrl}categories/${id}`, {
       headers: authHeaders(), method: 'PUT', body: {
         title: category.title, goal: category.goal, color: category.color,
         classification: category.classification, income: category.income
       }
     }),
-    getRecurrences: accountId => $fetch(`${baseUrl}recurrences`, {
+    getRecurrences: accountId => apiFetch(`${baseUrl}recurrences`, {
       headers: authHeaders(), query: { accountId, page: 0, size: 200 }
     }),
-    createRecurrence: recurrence => $fetch(`${baseUrl}recurrences`, {
+    createRecurrence: recurrence => apiFetch(`${baseUrl}recurrences`, {
       headers: authHeaders(), method: 'POST', body: {
         day: recurrence.day, income: recurrence.income, categoryID: recurrence.categoryID,
         type: recurrence.type, installments: recurrence.installments, payed: recurrence.payed,
@@ -166,10 +167,10 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
         status: recurrence.status
       }
     }),
-    deleteRecurrence: id => $fetch(`${baseUrl}recurrences/${id}`, {
+    deleteRecurrence: id => apiFetch(`${baseUrl}recurrences/${id}`, {
       headers: authHeaders(), method: 'DELETE'
     }),
-    editRecurrence: (id, recurrence) => $fetch(`${baseUrl}recurrences/${id}`, {
+    editRecurrence: (id, recurrence) => apiFetch(`${baseUrl}recurrences/${id}`, {
       headers: authHeaders(), method: 'PUT', body: {
         title: recurrence.title,
         day: recurrence.day,
@@ -181,19 +182,19 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
         status: recurrence.status
       }
     }),
-    confirmRecurrence: (id, value) => $fetch(`${baseUrl}recurrences/${id}/confirm`, {
+    confirmRecurrence: (id, value) => apiFetch(`${baseUrl}recurrences/${id}/confirm`, {
       headers: authHeaders(), method: 'POST', body: value == null ? undefined : { value }
     }),
-    getTransactions: (accountId, page = 0, size = 200) => $fetch(`${baseUrl}transactions`, {
+    getTransactions: (accountId, page = 0, size = 200) => apiFetch(`${baseUrl}transactions`, {
       headers: authHeaders(), query: { accountId, page, size }
     }),
-    deleteTransaction: id => $fetch(`${baseUrl}transactions/${id}`, {
+    deleteTransaction: id => apiFetch(`${baseUrl}transactions/${id}`, {
       headers: authHeaders(), method: 'DELETE'
     }),
-    confirmTransaction: (id, value) => $fetch(`${baseUrl}transactions/${id}/confirm`, {
+    confirmTransaction: (id, value) => apiFetch(`${baseUrl}transactions/${id}/confirm`, {
       headers: authHeaders(), method: 'POST', body: value == null ? undefined : { value }
     }),
-    editTransaction: (id, transaction) => $fetch(`${baseUrl}transactions/${id}`, {
+    editTransaction: (id, transaction) => apiFetch(`${baseUrl}transactions/${id}`, {
       headers: authHeaders(), method: 'PUT', body: {
         title: transaction.title,
         value: transaction.value,
@@ -202,7 +203,7 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
         income: transaction.income
       }
     }),
-    createTransaction: transaction => $fetch(`${baseUrl}transactions`, {
+    createTransaction: transaction => apiFetch(`${baseUrl}transactions`, {
       headers: authHeaders(), method: 'POST', body: {
         income: transaction.income, value: transaction.value, categoryID: transaction.categoryID,
         title: transaction.title, recurrencyID: transaction.recurrencyID,
@@ -210,43 +211,43 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
         status: transaction.status
       }
     }),
-    previewStatementImport: request => $fetch(`${baseUrl}transactions/import/preview`, {
+    previewStatementImport: request => apiFetch(`${baseUrl}transactions/import/preview`, {
       headers: authHeaders(), method: 'POST', body: request
     }),
-    confirmStatementImport: request => $fetch(`${baseUrl}transactions/import/confirm`, {
+    confirmStatementImport: request => apiFetch(`${baseUrl}transactions/import/confirm`, {
       headers: authHeaders(), method: 'POST', body: request
     }),
-    reviewImportedTransaction: (id, review) => $fetch(`${baseUrl}transactions/${id}/review`, {
+    reviewImportedTransaction: (id, review) => apiFetch(`${baseUrl}transactions/${id}/review`, {
       headers: authHeaders(), method: 'PUT', body: review
     }),
-    getTransactionImportAudit: id => $fetch(`${baseUrl}transactions/${id}/import-audit`, {
+    getTransactionImportAudit: id => apiFetch(`${baseUrl}transactions/${id}/import-audit`, {
       headers: authHeaders()
     }),
-    getGoals: (accountId, periodMonth) => $fetch(`${baseUrl}goals`, {
+    getGoals: (accountId, periodMonth) => apiFetch(`${baseUrl}goals`, {
       headers: authHeaders(), query: { accountId, periodMonth, page: 0, size: 200 }
     }),
-    createGoal: goal => $fetch(`${baseUrl}goals`, {
+    createGoal: goal => apiFetch(`${baseUrl}goals`, {
       headers: authHeaders(), method: 'POST', body: { ...goal, active: goal.active ?? true }
     }),
-    updateGoal: (id, goal) => $fetch(`${baseUrl}goals/${id}`, {
+    updateGoal: (id, goal) => apiFetch(`${baseUrl}goals/${id}`, {
       headers: authHeaders(), method: 'PUT', body: { ...goal, active: goal.active ?? true }
     }),
-    deleteGoal: id => $fetch(`${baseUrl}goals/${id}`, {
+    deleteGoal: id => apiFetch(`${baseUrl}goals/${id}`, {
       headers: authHeaders(), method: 'DELETE'
     }),
-    getGoalSummary: (id, periodMonth) => $fetch(`${baseUrl}goals/${id}/summary`, {
+    getGoalSummary: (id, periodMonth) => apiFetch(`${baseUrl}goals/${id}/summary`, {
       headers: authHeaders(), query: { periodMonth }
     }),
-    contributeToGoal: (id, contribution) => $fetch(`${baseUrl}goals/${id}/contributions`, {
+    contributeToGoal: (id, contribution) => apiFetch(`${baseUrl}goals/${id}/contributions`, {
       headers: authHeaders(), method: 'POST', body: contribution
     }),
-    getProjection: (accountId, days = 90) => $fetch(`${baseUrl}dashboard/projection`, {
+    getProjection: (accountId, days = 90) => apiFetch(`${baseUrl}dashboard/projection`, {
       headers: authHeaders(), query: { accountId, days }
     }),
-    getPending: (accountId, days = 30) => $fetch(`${baseUrl}dashboard/pending`, {
+    getPending: (accountId, days = 30) => apiFetch(`${baseUrl}dashboard/pending`, {
       headers: authHeaders(), query: { accountId, days }
     }),
-    getInvestmentSummary: accountId => $fetch(`${baseUrl}dashboard/investments`, {
+    getInvestmentSummary: accountId => apiFetch(`${baseUrl}dashboard/investments`, {
       headers: authHeaders(), query: { accountId }
     })
   }
