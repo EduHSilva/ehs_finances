@@ -40,6 +40,7 @@ export interface GoalContribution {
   amount: number
   date: string
   transactionId?: string
+  adjustment?: boolean
 }
 
 export interface MonthlyGoalSummary {

@@ -5,11 +5,10 @@ export function getTokenCookie() {
 }
 
 export function formatCurrency(value: number) {
-  const locale = typeof navigator === 'undefined' ? 'pt-BR' : navigator.language
-  if (locale == 'en') {
-    return 'U$ ' + value.toFixed(2)
-  }
-  return 'R$ ' + value.toFixed(2)
+  const language = useI18n().locale.value
+  const locale = language === 'pt' ? 'pt-BR' : 'en-US'
+  const currency = language === 'pt' ? 'BRL' : 'USD'
+  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value)
 }
 
 export function formatDate(value: string | Date, appLanguage?: string) {

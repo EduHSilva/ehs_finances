@@ -38,7 +38,8 @@ const createSchema = z.object({
 })
 const contributionSchema = z.object({
   amount: z.coerce.number().positive(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  adjustment: z.boolean().optional()
 })
 
 type CreateSchema = z.output<typeof createSchema>
@@ -47,7 +48,7 @@ type ContributionSchema = z.output<typeof contributionSchema>
 const createState = reactive<Partial<CreateSchema>>({
   title: '', mode: 'FIXED', amount: undefined, initialBalance: undefined, objective: undefined, dtInicio: '', dtFim: ''
 })
-const contributionState = reactive<Partial<ContributionSchema>>({ amount: undefined, date: '' })
+const contributionState = reactive<{ amount?: number, date: string, adjustment: boolean }>({ amount: undefined, date: '', adjustment: false })
 
 const monthKey = computed(() => `${currentMonth.value.getFullYear()}-${String(currentMonth.value.getMonth() + 1).padStart(2, '0')}`)
 const monthLabel = computed(() => new Intl.DateTimeFormat(locale.value === 'pt' ? 'pt-BR' : 'en-US', { month: 'long', year: 'numeric' }).format(currentMonth.value))
@@ -175,6 +176,7 @@ function openContribution(goal: MonthlyGoal) {
   selectedGoal.value = goal
   contributionState.amount = undefined
   contributionState.date = `${monthKey.value}-01`
+  contributionState.adjustment = false
   contributionOpen.value = true
 }
 
@@ -250,7 +252,11 @@ async function onAddContribution(event: FormSubmitEvent<ContributionSchema>) {
   try {
     await contribute(selectedGoal.value.id, event.data, account.id, monthKey.value)
     contributionOpen.value = false
-    toast.add({ title: t('goalContributionAdded'), color: 'success', icon: 'i-lucide-check' })
+    toast.add({
+      title: t(event.data.adjustment ? 'goalAdjustmentAdded' : 'goalContributionAdded'),
+      color: 'success',
+      icon: 'i-lucide-check'
+    })
   } catch {
     toast.add({ title: t('goalContributionFailed'), color: 'error' })
   }
@@ -475,7 +481,7 @@ const modeItems = computed(() => [
           </template>
         </UModal>
 
-        <UModal v-model:open="contributionOpen" :title="$t('recordGoalRealization')" :description="selectedGoal?.title">
+        <UModal v-model:open="contributionOpen" :title="contributionState.adjustment ? $t('recordGoalAdjustment') : $t('recordGoalRealization')" :description="selectedGoal?.title">
           <template #body>
             <UForm :schema="contributionSchema" :state="contributionState" class="space-y-4" @submit="onAddContribution">
               <UFormField :label="$t('amount')" name="amount" required>
@@ -484,9 +490,16 @@ const modeItems = computed(() => [
               <UFormField :label="$t('date')" name="date" required>
                 <UInput v-model="contributionState.date" type="date" class="w-full" />
               </UFormField>
+              <UFormField name="adjustment">
+                <UCheckbox
+                  v-model="contributionState.adjustment"
+                  :label="$t('manualAdjustment')"
+                  :description="$t('manualAdjustmentHelp')"
+                />
+              </UFormField>
               <div class="flex justify-end gap-2">
                 <UButton color="neutral" variant="subtle" :label="$t('cancel')" @click="contributionOpen = false" />
-                <UButton type="submit" :label="$t('recordRealization')" />
+                <UButton type="submit" :label="contributionState.adjustment ? $t('applyAdjustment') : $t('recordRealization')" />
               </div>
             </UForm>
           </template>

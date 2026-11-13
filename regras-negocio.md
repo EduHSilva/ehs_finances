@@ -57,11 +57,13 @@
   (mês, ou intervalo início/fim). Fim não pode ser anterior ao início.
 - Com intervalo, a meta vale para todos os meses sobrepostos; sem intervalo, só para o
   mês informado.
-- Esperado = valor fixo ou % da receita confirmada; realizado = soma dos aportes do mês;
-  progresso = realizado ÷ esperado (0 quando esperado = 0).
+- Esperado = valor fixo ou % da receita confirmada; realizado = soma dos aportes do mês
+  (excluindo ajustes); progresso = realizado ÷ esperado (0 quando esperado = 0).
 - Aporte pode vincular um lançamento existente (despesa `OK`, mesma conta, valor e data)
   ou criar um automaticamente na categoria de investimentos ("Aporte: <meta>").
   Só lançamentos do próprio usuário são aceitos (id de outro usuário responde 404).
+- Aporte do tipo **ajuste** (ex.: rendimento) não gera lançamento: soma ao saldo/objetivo
+  da meta, mas não entra no realizado do mês. Ajuste não pode vincular lançamento.
 - Apagar aporte/meta apaga os lançamentos gerados por ele.
 - Saldo inicial só é editável enquanto a meta não tem aportes ("meta zerada" = ainda sem
   aportes); não existe estado "concluída" automático.
