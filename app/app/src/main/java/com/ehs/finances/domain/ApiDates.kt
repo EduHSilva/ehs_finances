@@ -36,9 +36,12 @@ object ApiDates {
         return instant?.atZone(ZoneId.systemDefault())?.toLocalDate()
     }
 
-    /** Envia o dia escolhido como instante no início do dia local. */
-    fun toApi(value: LocalDate): String =
-        value.atStartOfDay(ZoneId.systemDefault()).toInstant().toString()
+    /**
+     * Envia o dia escolhido como meio-dia local sem fuso, igual ao web
+     * (`yyyy-MM-ddT12:00:00`). O meio-dia evita que o dia mude quando o servidor
+     * interpreta o valor em outro fuso.
+     */
+    fun toApi(value: LocalDate): String = value.atTime(12, 0).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
 
     fun format(value: LocalDate?, locale: Locale): String =
         value?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy", locale)) ?: "—"

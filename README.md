@@ -2,9 +2,8 @@
 
 ## Estrutura
 
-- `web/` — aplicação Nuxt (todo o código web: `app/`, `i18n/`, config e assets).
-- `legacy/flutter/` — app Flutter legado, mantido como referência para a futura migração para Kotlin em `app/`.
-- `app/` — app Android Kotlin com Jetpack Compose.
+- `web/` - aplicação Nuxt (todo o código web: `app/`, `i18n/`, config e assets).
+- `app/` - app Android Kotlin com Jetpack Compose, consumindo os mesmos endpoints do web.
 - `Dockerfile`, `docker-compose.yaml`, `docker-compose.prod.yml` e `docker/` — build e publicação em `/app/finances/`.
 - `.github/` — CI e publicação da imagem `finances-ui`.
 
@@ -15,6 +14,21 @@ cd web
 pnpm install
 pnpm dev
 ```
+
+## App Android
+
+```bash
+cd app
+./gradlew :app:assembleDebug
+```
+
+Configuração em `app/local.properties` (não versionado) ou variáveis de ambiente:
+
+- `ehs.finances.apiBaseUrl` / `EHS_FINANCES_API_BASE_URL` — URL base da API (padrão `http://10.0.2.2/`, que é o host visto pelo emulador).
+- `ehs.finances.googleClientId` / `EHS_FINANCES_GOOGLE_CLIENT_ID` — Client ID OAuth (Web) do Google. Vazio oculta o botão de login com Google.
+
+O app usa os mesmos endpoints do web (`users`, `finances`): contas, preferências, transações,
+categorias, recorrências, metas mensais, projeção de caixa e importação de extrato CSV/OFX.
 
 ## Docker / deploy
 

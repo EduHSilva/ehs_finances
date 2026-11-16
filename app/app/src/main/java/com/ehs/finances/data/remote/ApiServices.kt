@@ -16,7 +16,7 @@ interface AuthApi {
     suspend fun login(@Body body: LoginRequest): Envelope<LoginDto>
 
     @POST("users/auth/register")
-    suspend fun register(@Body body: RegisterRequest): Envelope<UserDto>
+    suspend fun register(@Body body: RegisterRequest): Envelope<JsonElement?>
 
     @GET("users/auth/me")
     suspend fun me(): Envelope<LoginDto>
@@ -27,6 +27,22 @@ interface AuthApi {
 
 /** Endpoints do microserviço de finanças, atrás do gateway em `/finances`. */
 interface FinancesApi {
+    @GET("finances/preferences")
+    suspend fun preferences(): Envelope<FinancePreferencesDto>
+
+    @PUT("finances/preferences")
+    suspend fun updatePreferences(
+        @Body body: UpdateFinancePreferencesRequest,
+    ): Envelope<FinancePreferencesDto>
+
+    @GET("finances/accounts")
+    suspend fun accounts(): Envelope<List<FinanceAccountDto>>
+
+    @POST("finances/accounts")
+    suspend fun createAccount(
+        @Body body: CreateFinanceAccountRequest,
+    ): Envelope<FinanceAccountDto>
+
     @GET("finances/categories")
     suspend fun categories(
         @Query("page") page: Int = 0,
@@ -47,6 +63,7 @@ interface FinancesApi {
 
     @GET("finances/transactions")
     suspend fun transactions(
+        @Query("accountId") accountId: String?,
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 200,
     ): Envelope<PageDto<TransactionDto>>
@@ -63,8 +80,36 @@ interface FinancesApi {
     @DELETE("finances/transactions/{id}")
     suspend fun deleteTransaction(@Path("id") id: String): Envelope<JsonElement?>
 
+    @POST("finances/transactions/{id}/confirm")
+    suspend fun confirmTransaction(
+        @Path("id") id: String,
+        @Body body: ConfirmValueRequest?,
+    ): Envelope<TransactionDto>
+
+    @POST("finances/transactions/import/preview")
+    suspend fun previewImport(
+        @Body body: StatementImportRequest,
+    ): Envelope<StatementImportPreviewDto>
+
+    @POST("finances/transactions/import/confirm")
+    suspend fun confirmImport(
+        @Body body: StatementImportRequest,
+    ): Envelope<StatementImportResultDto>
+
+    @PUT("finances/transactions/{id}/review")
+    suspend fun reviewImported(
+        @Path("id") id: String,
+        @Body body: ReviewImportedTransactionRequest,
+    ): Envelope<TransactionDto?>
+
+    @GET("finances/transactions/{id}/import-audit")
+    suspend fun importAudit(
+        @Path("id") id: String,
+    ): Envelope<List<TransactionImportAuditDto>>
+
     @GET("finances/recurrences")
     suspend fun recurrences(
+        @Query("accountId") accountId: String?,
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 200,
     ): Envelope<PageDto<RecurrenceDto>>
@@ -80,4 +125,59 @@ interface FinancesApi {
 
     @DELETE("finances/recurrences/{id}")
     suspend fun deleteRecurrence(@Path("id") id: String): Envelope<JsonElement?>
+
+    @POST("finances/recurrences/{id}/confirm")
+    suspend fun confirmRecurrence(
+        @Path("id") id: String,
+        @Body body: ConfirmValueRequest?,
+    ): Envelope<RecurrenceDto>
+
+    @GET("finances/goals")
+    suspend fun goals(
+        @Query("accountId") accountId: String,
+        @Query("periodMonth") periodMonth: String,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 200,
+    ): Envelope<PageDto<MonthlyGoalDto>>
+
+    @POST("finances/goals")
+    suspend fun createGoal(@Body body: MonthlyGoalRequest): Envelope<MonthlyGoalDto>
+
+    @PUT("finances/goals/{id}")
+    suspend fun updateGoal(
+        @Path("id") id: String,
+        @Body body: MonthlyGoalRequest,
+    ): Envelope<MonthlyGoalDto>
+
+    @DELETE("finances/goals/{id}")
+    suspend fun deleteGoal(@Path("id") id: String): Envelope<JsonElement?>
+
+    @GET("finances/goals/{id}/summary")
+    suspend fun goalSummary(
+        @Path("id") id: String,
+        @Query("periodMonth") periodMonth: String,
+    ): Envelope<MonthlyGoalSummaryDto>
+
+    @POST("finances/goals/{id}/contributions")
+    suspend fun contributeToGoal(
+        @Path("id") id: String,
+        @Body body: GoalContributionRequest,
+    ): Envelope<JsonElement?>
+
+    @GET("finances/dashboard/projection")
+    suspend fun projection(
+        @Query("accountId") accountId: String,
+        @Query("days") days: Int,
+    ): Envelope<CashflowProjectionDto>
+
+    @GET("finances/dashboard/pending")
+    suspend fun pending(
+        @Query("accountId") accountId: String,
+        @Query("days") days: Int,
+    ): Envelope<DashboardPendingDto>
+
+    @GET("finances/dashboard/investments")
+    suspend fun investments(
+        @Query("accountId") accountId: String,
+    ): Envelope<InvestmentSummaryDto>
 }

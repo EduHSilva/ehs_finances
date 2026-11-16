@@ -1,4 +1,4 @@
-# Nuxt dev/build outputs
+﻿# Nuxt dev/build outputs
 .output
 .data
 .nuxt
@@ -26,10 +26,10 @@ logs
 # VSC
 .history
 
-# Flutter legado (base para a futura migração Kotlin)
-.dll
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-legacy/flutter/build/
+# App Android
+app/.gradle/
+app/build/
+app/app/build/
+app/local.properties
+app/gradle/gradle-daemon-jvm.properties
 todo.md

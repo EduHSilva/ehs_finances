@@ -18,6 +18,8 @@ fun configValue(property: String, env: String, fallback: String): String =
     (localProperties.getProperty(property) ?: System.getenv(env) ?: fallback).trim()
 
 val apiBaseUrl = configValue("ehs.finances.apiBaseUrl", "EHS_FINANCES_API_BASE_URL", "http://10.0.2.2/")
+// Client ID OAuth do Google (Web). Vazio oculta o botão de login com Google.
+val googleClientId = configValue("ehs.finances.googleClientId", "EHS_FINANCES_GOOGLE_CLIENT_ID", "")
 
 android {
     namespace = "com.ehs.finances"
@@ -32,6 +34,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "API_BASE_URL", "\"${apiBaseUrl.replace("\"", "\\\"")}\"")
+        buildConfigField("String", "GOOGLE_CLIENT_ID", "\"${googleClientId.replace("\"", "\\\"")}\"")
     }
 
     buildTypes {
@@ -83,6 +86,10 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     implementation(libs.androidx.navigation.compose)
+
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 
     implementation(libs.retrofit)
     implementation(libs.retrofit.kotlinx.serialization)
