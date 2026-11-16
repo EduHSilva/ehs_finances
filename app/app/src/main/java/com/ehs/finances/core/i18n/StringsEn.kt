@@ -1,7 +1,7 @@
 package com.ehs.finances.core.i18n
 
 internal val enStrings: Map<String, String> = mapOf(
-    "appName" to "EHS Finances",
+    "appName" to "Finanças",
     "menu" to "Menu",
     "goBack" to "Back",
     "close" to "Close",

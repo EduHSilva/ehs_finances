@@ -240,6 +240,12 @@ fun AuthScreen() {
                 }
             }
             Spacer(Modifier.height(24.dp))
+            Text(
+                text = "Desenvolvido por EHS Solutions",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
         }
     }
 

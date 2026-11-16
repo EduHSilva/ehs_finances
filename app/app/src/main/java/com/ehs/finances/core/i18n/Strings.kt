@@ -37,7 +37,7 @@ class Strings(val language: AppLanguage = AppLanguage.PT_BR) {
 val LocalStrings = staticCompositionLocalOf { Strings() }
 
 private val ptBr: Map<String, String> = mapOf(
-    "appName" to "EHS Finances",
+    "appName" to "Finanças",
     "menu" to "Menu",
     "goBack" to "Voltar",
     "close" to "Fechar",

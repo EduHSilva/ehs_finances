@@ -1,7 +1,7 @@
 {
-  "name": "EHS Finances — EHS Solutions",
-  "short_name": "EHS Finances",
-  "description": "Controle financeiro responsivo para contas PF e PJ.",
+  "name": "Finanças — EHS Solutions",
+  "short_name": "Finanças",
+  "description": "Controle financeiro responsivo da EHS Solutions para contas PF e PJ.",
   "start_url": "./dashboard",
   "scope": "./",
   "display": "standalone",

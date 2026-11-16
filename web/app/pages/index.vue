@@ -47,7 +47,7 @@ const features = computed(() => [{
   <div class="min-h-screen bg-default">
     <header class="sticky top-0 z-10 border-b border-default bg-default/80 backdrop-blur">
       <div class="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-6 py-4">
-        <NuxtLink to="/" aria-label="EHS Finances">
+        <NuxtLink to="/" aria-label="Finanças">
           <BrandLogo />
         </NuxtLink>
 

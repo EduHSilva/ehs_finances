@@ -162,6 +162,7 @@ onMounted(async () => {
 
       <template #footer="{ collapsed }">
         <UserMenu :collapsed="collapsed" />
+        <p v-if="!collapsed" class="px-2 pt-2 pb-1 text-[11px] text-muted">Desenvolvido por EHS Solutions</p>
       </template>
     </UDashboardSidebar>
 

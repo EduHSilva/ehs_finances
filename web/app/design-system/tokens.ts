@@ -1,6 +1,6 @@
 export const designTokens = {
   brand: {
-    name: 'EHS Finances',
+    name: 'Finanças',
     logoIcon: 'i-lucide-wallet-cards'
   },
   typography: {

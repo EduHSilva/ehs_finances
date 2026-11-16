@@ -51,7 +51,7 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
 <template>
   <div class="flex min-h-screen flex-col bg-elevated/30">
     <header class="flex items-center justify-between px-6 py-4">
-      <NuxtLink to="/" aria-label="EHS Finances">
+      <NuxtLink to="/" aria-label="Finanças">
         <BrandLogo />
       </NuxtLink>
       <UButton to="/" variant="ghost" color="neutral" icon="i-lucide-arrow-left" :label="$t('backToHome')" />
@@ -93,5 +93,7 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
         </UAuthForm>
       </UPageCard>
     </div>
+
+    <p class="pb-6 text-center text-xs text-muted">Desenvolvido por EHS Solutions</p>
   </div>
 </template>

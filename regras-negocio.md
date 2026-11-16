@@ -3,6 +3,14 @@
 > Controle financeiro pessoal e do negócio. Plataforma (auth, roles, isolamento):
 > `D:/Projetos/ehs_microservices/regras-negocio.md`.
 
+## Marca
+
+- Nome exibido na web e no app: **Finanças**.
+- Cor de marca indigo (`#4F46E5`, dark `#818CF8`) sobre neutros zinc, igual nos dois
+  clientes; ícone próprio (gráfico ascendente), sem reaproveitar o ícone de outro app.
+- Web (sidebar, login/cadastro) e app (login e perfil) exibem "Desenvolvido por EHS
+  Solutions".
+
 ## Contas
 
 - Tipos: `PF` (pessoal) e `PJ` (negócio). O tipo é só rótulo/visibilidade — não muda
