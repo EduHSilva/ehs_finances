@@ -13,15 +13,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -56,6 +52,7 @@ import com.ehs.finances.core.ui.components.FormDialog
 import com.ehs.finances.core.ui.components.FormError
 import com.ehs.finances.core.ui.components.LoadingScreen
 import com.ehs.finances.core.ui.components.PrimaryButton
+import com.ehs.finances.core.ui.components.RefreshableColumn
 import com.ehs.finances.core.ui.components.ScreenTitle
 import com.ehs.finances.core.ui.components.SectionHeader
 import com.ehs.finances.core.ui.components.SwitchRow
@@ -83,9 +80,10 @@ fun RecurrencesScreen() {
     var showForm by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<Recurrence?>(null) }
     var deleteTarget by remember { mutableStateOf<Recurrence?>(null) }
-    var confirmTarget by remember { mutableStateOf<Recurrence?>(null) }
 
-    Column(
+    RefreshableColumn(
+        isRefreshing = state.refreshing,
+        onRefresh = vm::refresh,
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
@@ -135,8 +133,6 @@ fun RecurrencesScreen() {
                             RecurrenceRow(
                                 recurrence = recurrence,
                                 categories = state.categories,
-                                loading = state.confirmingId == recurrence.id,
-                                onConfirm = { confirmTarget = recurrence },
                                 onEdit = {
                                     editing = recurrence
                                     showForm = true
@@ -157,8 +153,6 @@ fun RecurrencesScreen() {
                             RecurrenceRow(
                                 recurrence = recurrence,
                                 categories = state.categories,
-                                loading = state.confirmingId == recurrence.id,
-                                onConfirm = { confirmTarget = recurrence },
                                 onEdit = {
                                     editing = recurrence
                                     showForm = true
@@ -185,17 +179,6 @@ fun RecurrencesScreen() {
         )
     }
 
-    confirmTarget?.let { recurrence ->
-        ConfirmRecurrenceDialog(
-            recurrence = recurrence,
-            onDismiss = { confirmTarget = null },
-            onConfirm = { value ->
-                vm.confirm(recurrence.id, value)
-                confirmTarget = null
-            },
-        )
-    }
-
     deleteTarget?.let { recurrence ->
         ConfirmDialog(
             title = strings["confirmDeleteTitle"],
@@ -212,8 +195,6 @@ fun RecurrencesScreen() {
 private fun RecurrenceRow(
     recurrence: Recurrence,
     categories: List<Category>,
-    loading: Boolean,
-    onConfirm: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -222,7 +203,6 @@ private fun RecurrenceRow(
     val category = categories.firstOrNull { it.id == recurrence.categoryId }
     val categoryText = category?.let { categoryLabel(it, strings) }
         ?: categoryLabel(recurrence.category, recurrence.categoryKey, strings)
-    val done = recurrence.status.equals("PAYED", true) || recurrence.status.equals("INACTIVE", true)
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -274,43 +254,29 @@ private fun RecurrenceRow(
                 fontWeight = FontWeight.SemiBold,
                 color = if (recurrence.income) FinancesTheme.colors.success else FinancesTheme.colors.danger,
             )
-            if (loading) {
-                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-            } else {
-                Box {
-                    IconButton(onClick = { menuOpen = true }) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = strings["actions"])
-                    }
-                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        if (!done) {
-                            DropdownMenuItem(
-                                text = { Text(strings["confirmRecurrenceTitle"]) },
-                                leadingIcon = { Icon(Icons.Filled.Check, contentDescription = null) },
-                                onClick = {
-                                    menuOpen = false
-                                    onConfirm()
-                                },
-                            )
-                        }
-                        DropdownMenuItem(
-                            text = { Text(strings["edit"]) },
-                            leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
-                            onClick = {
-                                menuOpen = false
-                                onEdit()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(strings["delete"], color = MaterialTheme.colorScheme.error) },
-                            leadingIcon = {
-                                Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                            },
-                            onClick = {
-                                menuOpen = false
-                                onDelete()
-                            },
-                        )
-                    }
+            Box {
+                IconButton(onClick = { menuOpen = true }) {
+                    Icon(Icons.Filled.MoreVert, contentDescription = strings["actions"])
+                }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    DropdownMenuItem(
+                        text = { Text(strings["edit"]) },
+                        leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                        onClick = {
+                            menuOpen = false
+                            onEdit()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(strings["delete"], color = MaterialTheme.colorScheme.error) },
+                        leadingIcon = {
+                            Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                        },
+                        onClick = {
+                            menuOpen = false
+                            onDelete()
+                        },
+                    )
                 }
             }
         }
@@ -459,50 +425,6 @@ private fun RecurrenceFormDialog(
                 )
             }
         }
-        FormError(error?.let { strings[it] })
-    }
-}
-
-@Composable
-private fun ConfirmRecurrenceDialog(
-    recurrence: Recurrence,
-    onDismiss: () -> Unit,
-    onConfirm: (Double) -> Unit,
-) {
-    val strings = LocalStrings.current
-    var value by remember {
-        mutableStateOf(BigDecimal.valueOf(recurrence.value).stripTrailingZeros().toPlainString())
-    }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    FormDialog(
-        title = strings["confirmRecurrenceTitle"],
-        onDismiss = onDismiss,
-        confirmLabel = strings["confirm"],
-        onConfirm = {
-            val amount = Money.parse(value)
-            if (amount == null || amount <= 0.0) {
-                error = "confirmValueInvalid"
-            } else {
-                onConfirm(amount)
-            }
-        },
-    ) {
-        Text(
-            recurrence.title,
-            style = MaterialTheme.typography.titleSmall,
-        )
-        Text(
-            strings["confirmRecurrenceHelp"],
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        AppTextField(
-            value = value,
-            onValueChange = { value = it },
-            label = strings["valueLabel"],
-            keyboardType = KeyboardType.Decimal,
-        )
         FormError(error?.let { strings[it] })
     }
 }

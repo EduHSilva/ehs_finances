@@ -180,4 +180,40 @@ interface FinancesApi {
     suspend fun investments(
         @Query("accountId") accountId: String,
     ): Envelope<InvestmentSummaryDto>
+
+    @GET("finances/accounts/{accountId}/members")
+    suspend fun accountMembers(
+        @Path("accountId") accountId: String,
+    ): Envelope<AccountMembersDto>
+
+    @POST("finances/accounts/{accountId}/members")
+    suspend fun inviteAccountMember(
+        @Path("accountId") accountId: String,
+        @Body body: InviteAccountMemberRequest,
+    ): Envelope<AccountMemberDto>
+
+    @POST("finances/accounts/{accountId}/members/{memberId}/resend")
+    suspend fun resendAccountInvite(
+        @Path("accountId") accountId: String,
+        @Path("memberId") memberId: String,
+    ): Envelope<AccountMemberDto>
+
+    @DELETE("finances/accounts/{accountId}/members/{memberId}")
+    suspend fun revokeAccountMember(
+        @Path("accountId") accountId: String,
+        @Path("memberId") memberId: String,
+    ): Envelope<JsonElement?>
+
+    @GET("finances/account-invites")
+    suspend fun accountInvites(): Envelope<List<IncomingAccountInviteDto>>
+
+    @POST("finances/account-invites/{inviteId}/accept")
+    suspend fun acceptAccountInvite(
+        @Path("inviteId") inviteId: String,
+    ): Envelope<JsonElement?>
+
+    @POST("finances/account-invites/{inviteId}/decline")
+    suspend fun declineAccountInvite(
+        @Path("inviteId") inviteId: String,
+    ): Envelope<JsonElement?>
 }

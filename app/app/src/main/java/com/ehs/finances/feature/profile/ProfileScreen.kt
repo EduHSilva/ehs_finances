@@ -1,5 +1,6 @@
 package com.ehs.finances.feature.profile
 
+import android.util.Patterns
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,18 +59,21 @@ import com.ehs.finances.core.ui.components.SwitchRow
 import com.ehs.finances.core.ui.containerViewModel
 import com.ehs.finances.core.ui.resolve
 import com.ehs.finances.core.ui.theme.FinancesTheme
+import com.ehs.finances.data.model.AccountMember
 import com.ehs.finances.data.model.FinancialAccount
+import com.ehs.finances.data.model.IncomingAccountInvite
 import com.ehs.finances.domain.Money
 
 @Composable
 fun ProfileScreen(onBack: () -> Unit) {
     val container = com.ehs.finances.di.LocalContainer.current
     val vm: ProfileViewModel = containerViewModel {
-        ProfileViewModel(it.authRepository, it.financeState)
+        ProfileViewModel(it.authRepository, it.financeState, it.financesRepository)
     }
     val state by vm.state.collectAsStateWithLifecycle()
     val message by vm.message.collectAsStateWithLifecycle()
     val accounts by container.financeState.visibleAccounts.collectAsStateWithLifecycle()
+    val activeAccount by container.financeState.activeAccount.collectAsStateWithLifecycle()
     val activeAccountId by container.financeState.activeAccountId.collectAsStateWithLifecycle()
     val preferences by container.financeState.preferences.collectAsStateWithLifecycle()
     val settings = LocalAppSettings.current
@@ -76,10 +81,15 @@ fun ProfileScreen(onBack: () -> Unit) {
     val language by settings.language.collectAsStateWithLifecycle()
     val strings = LocalStrings.current
 
+    val isOwner = activeAccount?.isOwner ?: true
+
     MessageEffect(message, onConsumed = vm::consumeMessage)
     LaunchedEffect(Unit) { vm.load() }
+    LaunchedEffect(activeAccountId) { vm.loadMembers() }
 
     var showAccountForm by remember { mutableStateOf(false) }
+    var showInviteForm by remember { mutableStateOf(false) }
+    var revokeTarget by remember { mutableStateOf<AccountMember?>(null) }
     var showLogout by remember { mutableStateOf(false) }
 
     Column(
@@ -187,6 +197,79 @@ fun ProfileScreen(onBack: () -> Unit) {
             }
         }
 
+        if (activeAccount != null) {
+            ContentCard {
+                SectionHeader(
+                    title = strings["members"],
+                    subtitle = strings["membersDescription"],
+                    action = {
+                        if (isOwner) {
+                            OutlinedButton(
+                                onClick = { showInviteForm = true },
+                                shape = RoundedCornerShape(12.dp),
+                            ) {
+                                Text(strings["invitePeople"])
+                            }
+                        }
+                    },
+                )
+                Spacer(Modifier.height(10.dp))
+                state.membersError?.takeIf { it.isNotBlank() }?.let { error ->
+                    Text(
+                        error,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = FinancesTheme.colors.danger,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+                if (!isOwner) {
+                    Text(
+                        strings["sharedAccountReadOnly"],
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+                val members = state.members?.members.orEmpty()
+                when {
+                    state.membersLoading && members.isEmpty() -> Text(
+                        strings["loading"],
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    members.isEmpty() -> EmptyNote(strings["noMembers"])
+                    else -> members.forEachIndexed { index, member ->
+                        if (index > 0) HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                        MemberRow(
+                            member = member,
+                            readonly = !isOwner || state.memberActionRunning,
+                            onResend = { vm.resendInvite(member) },
+                            onRevoke = { revokeTarget = member },
+                        )
+                    }
+                }
+            }
+
+            if (state.incomingInvites.isNotEmpty()) {
+                ContentCard {
+                    SectionHeader(
+                        title = strings["incomingInvites"],
+                        subtitle = strings["incomingInvitesDesc"],
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    state.incomingInvites.forEachIndexed { index, invite ->
+                        if (index > 0) HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                        IncomingInviteRow(
+                            invite = invite,
+                            busy = state.memberActionRunning,
+                            onAccept = { vm.acceptInvite(invite) },
+                            onDecline = { vm.declineInvite(invite) },
+                        )
+                    }
+                }
+            }
+        }
+
         ContentCard {
             SectionHeader(
                 title = strings["preferences"],
@@ -245,6 +328,31 @@ fun ProfileScreen(onBack: () -> Unit) {
         )
     }
 
+    if (showInviteForm) {
+        InviteMemberDialog(
+            loading = state.memberActionRunning,
+            onDismiss = { showInviteForm = false },
+            onSave = { email ->
+                vm.inviteMember(email)
+                showInviteForm = false
+            },
+        )
+    }
+
+    revokeTarget?.let { member ->
+        ConfirmDialog(
+            title = strings[if (member.isActive) "removeMemberTitle" else "cancelInviteTitle"],
+            text = strings[if (member.isActive) "removeMemberDesc" else "cancelInviteDesc"],
+            confirmLabel = strings[if (member.isActive) "removeMember" else "cancelInvite"],
+            dismissLabel = strings["cancel"],
+            onConfirm = {
+                vm.revokeMember(member)
+                revokeTarget = null
+            },
+            onDismiss = { revokeTarget = null },
+        )
+    }
+
     if (showLogout) {
         ConfirmDialog(
             title = strings["logoutAction"],
@@ -290,6 +398,126 @@ private fun AccountRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+@Composable
+private fun MemberRow(
+    member: AccountMember,
+    readonly: Boolean,
+    onResend: () -> Unit,
+    onRevoke: () -> Unit,
+) {
+    val strings = LocalStrings.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        InitialAvatar(name = member.name ?: member.email, size = 36.dp)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(
+                member.name?.takeIf { it.isNotBlank() } ?: member.email,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (!member.name.isNullOrBlank()) {
+                Text(
+                    member.email,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Text(
+                strings[if (member.isActive) "memberStatusActive" else "memberStatusPending"],
+                style = MaterialTheme.typography.labelSmall,
+                color = if (member.isActive) FinancesTheme.colors.success
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (!readonly) {
+            if (!member.isActive) {
+                TextButton(onClick = onResend) { Text(strings["resendInvite"]) }
+            }
+            TextButton(onClick = onRevoke) {
+                Text(strings[if (member.isActive) "removeMember" else "cancelInvite"])
+            }
+        }
+    }
+}
+
+@Composable
+private fun IncomingInviteRow(
+    invite: IncomingAccountInvite,
+    busy: Boolean,
+    onAccept: () -> Unit,
+    onDecline: () -> Unit,
+) {
+    val strings = LocalStrings.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(
+                invite.accountName,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                strings.format(
+                    "inviteFrom",
+                    "owner" to (invite.ownerName ?: invite.ownerEmail ?: strings["accountOwner"]),
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        TextButton(onClick = onAccept, enabled = !busy) { Text(strings["acceptInvite"]) }
+        TextButton(onClick = onDecline, enabled = !busy) { Text(strings["declineInvite"]) }
+    }
+}
+
+@Composable
+private fun InviteMemberDialog(
+    loading: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (email: String) -> Unit,
+) {
+    val strings = LocalStrings.current
+    var email by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    FormDialog(
+        title = strings["inviteMemberTitle"],
+        onDismiss = onDismiss,
+        confirmLabel = strings["sendInvite"],
+        loading = loading,
+        onConfirm = {
+            val trimmed = email.trim()
+            error = if (!Patterns.EMAIL_ADDRESS.matcher(trimmed).matches()) "emailInvalid" else null
+            if (error == null) onSave(trimmed)
+        },
+    ) {
+        AppTextField(
+            value = email,
+            onValueChange = { email = it; error = null },
+            label = strings["emailLabel"],
+            placeholder = strings["emailPlaceholder"],
+            keyboardType = KeyboardType.Email,
+        )
+        FormError(error?.let { strings[it] })
     }
 }
 

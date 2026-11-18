@@ -1,11 +1,14 @@
 package com.ehs.finances.data.mappers
 
 import com.ehs.finances.core.network.PageDto
+import com.ehs.finances.data.model.AccountMember
+import com.ehs.finances.data.model.AccountMembers
 import com.ehs.finances.data.model.CashflowProjection
 import com.ehs.finances.data.model.Category
 import com.ehs.finances.data.model.DashboardPending
 import com.ehs.finances.data.model.FinancePreferences
 import com.ehs.finances.data.model.FinancialAccount
+import com.ehs.finances.data.model.IncomingAccountInvite
 import com.ehs.finances.data.model.InvestmentSummary
 import com.ehs.finances.data.model.MonthlyGoal
 import com.ehs.finances.data.model.MonthlyGoalSummary
@@ -19,11 +22,14 @@ import com.ehs.finances.data.model.StatementImportPreviewLine
 import com.ehs.finances.data.model.StatementImportResult
 import com.ehs.finances.data.model.Transaction
 import com.ehs.finances.data.model.TransactionImportAudit
+import com.ehs.finances.data.remote.AccountMemberDto
+import com.ehs.finances.data.remote.AccountMembersDto
 import com.ehs.finances.data.remote.CashflowProjectionDto
 import com.ehs.finances.data.remote.CategoryDto
 import com.ehs.finances.data.remote.DashboardPendingDto
 import com.ehs.finances.data.remote.FinanceAccountDto
 import com.ehs.finances.data.remote.FinancePreferencesDto
+import com.ehs.finances.data.remote.IncomingAccountInviteDto
 import com.ehs.finances.data.remote.InvestmentSummaryDto
 import com.ehs.finances.data.remote.MonthlyGoalDto
 import com.ehs.finances.data.remote.MonthlyGoalSummaryDto
@@ -84,6 +90,39 @@ fun FinanceAccountDto.toModel(): FinancialAccount = FinancialAccount(
     openingBalance = openingBalance,
     balance = balance,
     currency = currency,
+    role = role ?: "OWNER",
+)
+
+fun AccountMemberDto.toModel(): AccountMember = AccountMember(
+    id = id,
+    accountId = accountId,
+    email = email,
+    name = name,
+    userId = userId,
+    status = status,
+    expiresAt = expiresAt,
+    acceptedAt = acceptedAt,
+    createdAt = createdAt,
+)
+
+fun AccountMembersDto.toModel(): AccountMembers = AccountMembers(
+    accountId = accountId,
+    accountName = accountName,
+    ownerId = ownerId,
+    ownerName = ownerName,
+    ownerEmail = ownerEmail,
+    members = members.map { it.toModel() },
+)
+
+fun IncomingAccountInviteDto.toModel(): IncomingAccountInvite = IncomingAccountInvite(
+    id = id,
+    accountId = accountId,
+    accountName = accountName,
+    ownerId = ownerId,
+    ownerName = ownerName,
+    ownerEmail = ownerEmail,
+    email = email,
+    expiresAt = expiresAt,
 )
 
 fun FinancePreferencesDto.toModel(): FinancePreferences = FinancePreferences(

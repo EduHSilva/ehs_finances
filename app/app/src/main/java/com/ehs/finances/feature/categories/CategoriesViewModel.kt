@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 
 data class CategoriesUiState(
     val loading: Boolean = false,
+    val refreshing: Boolean = false,
     val error: String? = null,
     val categories: List<Category> = emptyList(),
     val search: String = "",
@@ -53,22 +54,37 @@ class CategoriesViewModel(private val repository: FinancesRepository) : ViewMode
         load()
     }
 
-    fun load() {
+    fun load(silent: Boolean = false) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(loading = true, error = null)
+            _state.value = _state.value.copy(
+                loading = !silent,
+                refreshing = silent,
+                error = null,
+            )
             try {
                 val categories = repository.categories()
-                _state.value = _state.value.copy(loading = false, categories = categories)
+                _state.value = _state.value.copy(
+                    loading = false,
+                    refreshing = false,
+                    categories = categories,
+                )
             } catch (e: ApiException) {
-                _state.value = _state.value.copy(loading = false, error = e.message)
+                _state.value = _state.value.copy(
+                    loading = false,
+                    refreshing = false,
+                    error = e.message,
+                )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     loading = false,
+                    refreshing = false,
                     error = e.message ?: "Não foi possível carregar as categorias.",
                 )
             }
         }
     }
+
+    fun refresh() = load(silent = true)
 
     fun setSearch(value: String) {
         _state.value = _state.value.copy(search = value)

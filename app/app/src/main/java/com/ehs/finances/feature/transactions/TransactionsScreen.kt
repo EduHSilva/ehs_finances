@@ -66,6 +66,7 @@ import com.ehs.finances.core.ui.components.ErrorBanner
 import com.ehs.finances.core.ui.components.FormDialog
 import com.ehs.finances.core.ui.components.FormError
 import com.ehs.finances.core.ui.components.LoadingScreen
+import com.ehs.finances.core.ui.components.RefreshableColumn
 import com.ehs.finances.core.ui.components.ScreenTitle
 import com.ehs.finances.core.ui.components.SwitchRow
 import com.ehs.finances.core.ui.containerViewModel
@@ -96,7 +97,9 @@ fun TransactionsScreen(onOpenImport: (review: Boolean) -> Unit) {
     var deleteTarget by remember { mutableStateOf<Transaction?>(null) }
     var confirmTarget by remember { mutableStateOf<Transaction?>(null) }
 
-    Column(
+    RefreshableColumn(
+        isRefreshing = state.refreshing,
+        onRefresh = vm::refresh,
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())

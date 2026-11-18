@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 data class DashboardUiState(
     val days: Int = 30,
     val loading: Boolean = false,
+    val refreshing: Boolean = false,
     val error: String? = null,
     val projection: CashflowProjection? = null,
     val pending: DashboardPending? = null,
@@ -61,6 +62,7 @@ class DashboardViewModel(
     }
 
     fun refresh() {
+        _state.value = _state.value.copy(refreshing = true)
         reload.value++
     }
 
@@ -94,6 +96,7 @@ class DashboardViewModel(
         if (accountId == null) {
             _state.value = _state.value.copy(
                 loading = false,
+                refreshing = false,
                 error = null,
                 projection = null,
                 pending = null,
@@ -103,7 +106,11 @@ class DashboardViewModel(
             return
         }
 
-        _state.value = _state.value.copy(loading = true, error = null, days = horizon)
+        _state.value = _state.value.copy(
+            loading = !_state.value.refreshing,
+            error = null,
+            days = horizon,
+        )
         try {
             coroutineScope {
                 val projectionDeferred = async { repository.projection(accountId, horizon) }
@@ -114,6 +121,7 @@ class DashboardViewModel(
                 val projection = projectionDeferred.await()
                 _state.value = _state.value.copy(
                     loading = false,
+                    refreshing = false,
                     projection = projection,
                     pending = pendingDeferred.await(),
                     investments = investmentsDeferred.await(),
@@ -121,10 +129,11 @@ class DashboardViewModel(
                 )
             }
         } catch (e: ApiException) {
-            _state.value = _state.value.copy(loading = false, error = e.message)
+            _state.value = _state.value.copy(loading = false, refreshing = false, error = e.message)
         } catch (e: Exception) {
             _state.value = _state.value.copy(
                 loading = false,
+                refreshing = false,
                 error = e.message ?: "Não foi possível carregar a projeção.",
             )
         }

@@ -61,7 +61,47 @@ data class FinanceAccountDto(
     val openingBalance: Double = 0.0,
     val balance: Double = 0.0,
     val currency: String = "BRL",
+    val role: String? = null,
 )
+
+@Serializable
+data class AccountMemberDto(
+    val id: String = "",
+    val accountId: String = "",
+    val email: String = "",
+    val name: String? = null,
+    val userId: String? = null,
+    val status: String = "PENDING",
+    val expiresAt: String? = null,
+    val acceptedAt: String? = null,
+    val createdAt: String? = null,
+    val token: String? = null,
+)
+
+@Serializable
+data class AccountMembersDto(
+    val accountId: String = "",
+    val accountName: String = "",
+    val ownerId: String = "",
+    val ownerName: String? = null,
+    val ownerEmail: String? = null,
+    val members: List<AccountMemberDto> = emptyList(),
+)
+
+@Serializable
+data class IncomingAccountInviteDto(
+    val id: String = "",
+    val accountId: String = "",
+    val accountName: String = "",
+    val ownerId: String = "",
+    val ownerName: String? = null,
+    val ownerEmail: String? = null,
+    val email: String = "",
+    val expiresAt: String? = null,
+)
+
+@Serializable
+data class InviteAccountMemberRequest(val email: String)
 
 @Serializable
 data class CreateFinanceAccountRequest(

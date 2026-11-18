@@ -39,6 +39,7 @@ data class CategoryGoalRow(
 data class GoalsUiState(
     val month: YearMonth = YearMonth.now(),
     val loading: Boolean = false,
+    val refreshing: Boolean = false,
     val error: String? = null,
     val goals: List<MonthlyGoal> = emptyList(),
     val summaries: Map<String, MonthlyGoalSummary> = emptyMap(),
@@ -130,6 +131,7 @@ class GoalsViewModel(
     }
 
     fun refresh() {
+        _state.value = _state.value.copy(refreshing = true)
         reload.value++
     }
 
@@ -217,6 +219,7 @@ class GoalsViewModel(
             _state.value = _state.value.copy(
                 month = currentMonth,
                 loading = false,
+                refreshing = false,
                 error = null,
                 goals = emptyList(),
                 summaries = emptyMap(),
@@ -227,7 +230,11 @@ class GoalsViewModel(
         }
 
         val periodMonth = currentMonth.format(DateTimeFormatter.ofPattern("yyyy-MM"))
-        _state.value = _state.value.copy(month = currentMonth, loading = true, error = null)
+        _state.value = _state.value.copy(
+            month = currentMonth,
+            loading = !_state.value.refreshing,
+            error = null,
+        )
         try {
             coroutineScope {
                 val goalsDeferred = async { repository.goals(accountId, periodMonth) }
@@ -254,6 +261,7 @@ class GoalsViewModel(
 
                 _state.value = _state.value.copy(
                     loading = false,
+                    refreshing = false,
                     goals = goals,
                     summaries = summaries,
                     transactions = transactions,
@@ -261,10 +269,11 @@ class GoalsViewModel(
                 )
             }
         } catch (e: ApiException) {
-            _state.value = _state.value.copy(loading = false, error = e.message)
+            _state.value = _state.value.copy(loading = false, refreshing = false, error = e.message)
         } catch (e: Exception) {
             _state.value = _state.value.copy(
                 loading = false,
+                refreshing = false,
                 error = e.message ?: "Não foi possível carregar as metas.",
             )
         }

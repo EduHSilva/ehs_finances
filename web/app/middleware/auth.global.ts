@@ -26,6 +26,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   if (!user.value) {
+    if (typeof to.query.invite === 'string' && to.query.invite) {
+      return navigateTo({ path: '/auth/login', query: { invite: to.query.invite } })
+    }
     return navigateTo('/auth/login')
   }
 })

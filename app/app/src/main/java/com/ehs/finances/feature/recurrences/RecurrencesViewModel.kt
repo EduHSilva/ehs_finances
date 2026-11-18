@@ -18,12 +18,12 @@ import kotlinx.coroutines.launch
 
 data class RecurrencesUiState(
     val loading: Boolean = false,
+    val refreshing: Boolean = false,
     val error: String? = null,
     val recurrences: List<Recurrence> = emptyList(),
     val categories: List<Category> = emptyList(),
     val saving: Boolean = false,
     val deletingId: String? = null,
-    val confirmingId: String? = null,
 ) {
     val monthly: List<Recurrence>
         get() = recurrences.filter { it.type.equals("MONTH", ignoreCase = true) }
@@ -53,6 +53,7 @@ class RecurrencesViewModel(
     }
 
     fun refresh() {
+        _state.value = _state.value.copy(refreshing = true)
         reload.value++
     }
 
@@ -112,35 +113,18 @@ class RecurrencesViewModel(
         }
     }
 
-    fun confirm(id: String, value: Double) {
-        if (_state.value.confirmingId != null) return
-        viewModelScope.launch {
-            _state.value = _state.value.copy(confirmingId = id)
-            try {
-                repository.confirmRecurrence(id, value)
-                _message.value = UiMessage.Res("recurrenceConfirmed")
-                reload.value++
-            } catch (e: ApiException) {
-                _message.value = UiMessage.Text(e.message)
-            } catch (e: Exception) {
-                _message.value = UiMessage.Res("confirmValueFailed")
-            } finally {
-                _state.value = _state.value.copy(confirmingId = null)
-            }
-        }
-    }
-
     private suspend fun load(accountId: String?) {
         if (accountId == null) {
             _state.value = _state.value.copy(
                 loading = false,
+                refreshing = false,
                 error = null,
                 recurrences = emptyList(),
             )
             return
         }
 
-        _state.value = _state.value.copy(loading = true, error = null)
+        _state.value = _state.value.copy(loading = !_state.value.refreshing, error = null)
         try {
             if (!categoriesLoaded) {
                 runCatching { repository.categories() }.getOrNull()?.let { categories ->
@@ -149,12 +133,17 @@ class RecurrencesViewModel(
                 }
             }
             val recurrences = repository.recurrences(accountId)
-            _state.value = _state.value.copy(loading = false, recurrences = recurrences)
+            _state.value = _state.value.copy(
+                loading = false,
+                refreshing = false,
+                recurrences = recurrences,
+            )
         } catch (e: ApiException) {
-            _state.value = _state.value.copy(loading = false, error = e.message)
+            _state.value = _state.value.copy(loading = false, refreshing = false, error = e.message)
         } catch (e: Exception) {
             _state.value = _state.value.copy(
                 loading = false,
+                refreshing = false,
                 error = e.message ?: "Não foi possível carregar as recorrências.",
             )
         }

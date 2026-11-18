@@ -59,6 +59,7 @@ import com.ehs.finances.core.ui.components.FormError
 import com.ehs.finances.core.ui.components.LoadingScreen
 import com.ehs.finances.core.ui.components.MonthSelector
 import com.ehs.finances.core.ui.components.PrimaryButton
+import com.ehs.finances.core.ui.components.RefreshableColumn
 import com.ehs.finances.core.ui.components.ScreenTitle
 import com.ehs.finances.core.ui.components.SectionHeader
 import com.ehs.finances.core.ui.components.SwitchRow
@@ -92,7 +93,9 @@ fun GoalsScreen() {
     var deleteTarget by remember { mutableStateOf<MonthlyGoal?>(null) }
     var contributionTarget by remember { mutableStateOf<MonthlyGoal?>(null) }
 
-    Column(
+    RefreshableColumn(
+        isRefreshing = state.refreshing,
+        onRefresh = vm::refresh,
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())

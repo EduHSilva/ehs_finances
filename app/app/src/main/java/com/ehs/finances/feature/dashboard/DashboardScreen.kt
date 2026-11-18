@@ -44,6 +44,7 @@ import com.ehs.finances.core.ui.components.EmptyNote
 import com.ehs.finances.core.ui.components.ErrorBanner
 import com.ehs.finances.core.ui.components.LinkButton
 import com.ehs.finances.core.ui.components.LoadingScreen
+import com.ehs.finances.core.ui.components.RefreshableColumn
 import com.ehs.finances.core.ui.components.ScreenTitle
 import com.ehs.finances.core.ui.components.SectionHeader
 import com.ehs.finances.core.ui.components.SegmentedToggle
@@ -71,7 +72,9 @@ fun DashboardScreen(
 
     MessageEffect(message, onConsumed = vm::consumeMessage)
 
-    Column(
+    RefreshableColumn(
+        isRefreshing = state.refreshing,
+        onRefresh = vm::refresh,
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())

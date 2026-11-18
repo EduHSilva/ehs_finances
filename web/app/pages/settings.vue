@@ -10,15 +10,15 @@ const links = [[{
   to: '/settings',
   exact: true
 }, {
-  label: 'Members',
+  label: t('members'),
   icon: 'i-lucide-users',
   to: '/settings/members'
 }, {
-  label: 'Notifications',
+  label: t('notifications'),
   icon: 'i-lucide-bell',
   to: '/settings/notifications'
 }, {
-  label: 'Security',
+  label: t('security'),
   icon: 'i-lucide-shield',
   to: '/settings/security'
 }]] satisfies NavigationMenuItem[][]
@@ -31,7 +31,7 @@ const links = [[{
       :ui="{ body: 'lg:py-12' }"
     >
       <template #header>
-        <UDashboardNavbar title="Settings">
+        <UDashboardNavbar :title="t('settings')">
           <template #leading>
             <UDashboardSidebarCollapse />
           </template>

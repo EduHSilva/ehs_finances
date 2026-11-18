@@ -60,6 +60,43 @@ data class FinancialAccount(
     val openingBalance: Double,
     val balance: Double,
     val currency: String,
+    val role: String = "OWNER",
+) {
+    val isOwner: Boolean get() = role.equals("OWNER", ignoreCase = true)
+}
+
+data class AccountMember(
+    val id: String,
+    val accountId: String,
+    val email: String,
+    val name: String?,
+    val userId: String?,
+    val status: String,
+    val expiresAt: String?,
+    val acceptedAt: String?,
+    val createdAt: String?,
+) {
+    val isActive: Boolean get() = status.equals("ACTIVE", ignoreCase = true)
+}
+
+data class AccountMembers(
+    val accountId: String,
+    val accountName: String,
+    val ownerId: String,
+    val ownerName: String?,
+    val ownerEmail: String?,
+    val members: List<AccountMember>,
+)
+
+data class IncomingAccountInvite(
+    val id: String,
+    val accountId: String,
+    val accountName: String,
+    val ownerId: String,
+    val ownerName: String?,
+    val ownerEmail: String?,
+    val email: String,
+    val expiresAt: String?,
 )
 
 data class FinancePreferences(

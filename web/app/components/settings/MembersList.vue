@@ -1,19 +1,23 @@
 <script setup lang="ts">
-import type { DropdownMenuItem } from '@nuxt/ui'
-import type { Member } from '~/types'
+import type { AccountMember } from '~/types'
 
 defineProps<{
-  members: Member[]
+  members: AccountMember[]
+  readonly?: boolean
 }>()
 
-const items = [{
-  label: 'Edit member',
-  onSelect: () => console.log('Edit member')
-}, {
-  label: 'Remove member',
-  color: 'error' as const,
-  onSelect: () => console.log('Remove member')
-}] satisfies DropdownMenuItem[]
+const emit = defineEmits<{
+  resend: [member: AccountMember]
+  revoke: [member: AccountMember]
+  copy: [member: AccountMember]
+}>()
+
+const { t } = useI18n()
+
+function initials(member: AccountMember) {
+  const base = (member.name || member.email || '?').trim()
+  return base.slice(0, 1).toUpperCase()
+}
 </script>
 
 <template>
@@ -22,45 +26,70 @@ const items = [{
     class="divide-y divide-default"
   >
     <li
-      v-for="(member, index) in members"
-      :key="index"
+      v-for="member in members"
+      :key="member.id"
       class="flex items-center justify-between gap-3 py-3 px-4 sm:px-6"
     >
       <div class="flex items-center gap-3 min-w-0">
         <UAvatar
-          v-bind="member.avatar"
+          :text="initials(member)"
           size="md"
         />
 
         <div class="text-sm min-w-0">
           <p class="text-highlighted font-medium truncate">
-            {{ member.name }}
+            {{ member.name || member.email }}
           </p>
           <p class="text-muted truncate">
-            {{ member.username }}
+            {{ member.email }}
           </p>
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
-        <USelect
-          :model-value="member.role"
-          :items="['member', 'owner']"
-          color="neutral"
-          :ui="{ value: 'capitalize', item: 'capitalize' }"
-        />
-
-        <UDropdownMenu
-          :items="items"
-          :content="{ align: 'end' }"
+      <div class="flex items-center gap-1 sm:gap-2">
+        <UBadge
+          :color="member.status === 'ACTIVE' ? 'success' : 'warning'"
+          variant="subtle"
         >
+          {{ member.status === 'ACTIVE' ? t('memberStatusActive') : t('memberStatusPending') }}
+        </UBadge>
+
+        <template v-if="!readonly">
           <UButton
-            icon="i-lucide-ellipsis-vertical"
+            v-if="member.status === 'PENDING' && member.token"
+            icon="i-lucide-link"
             color="neutral"
             variant="ghost"
+            :aria-label="t('copyInviteLink')"
+            :title="t('copyInviteLink')"
+            @click="emit('copy', member)"
           />
-        </UDropdownMenu>
+          <UButton
+            v-if="member.status === 'PENDING'"
+            icon="i-lucide-send"
+            color="neutral"
+            variant="ghost"
+            :aria-label="t('resendInvite')"
+            :title="t('resendInvite')"
+            @click="emit('resend', member)"
+          />
+          <UButton
+            icon="i-lucide-x"
+            color="error"
+            variant="ghost"
+            :aria-label="member.status === 'PENDING' ? t('cancelInvite') : t('removeMember')"
+            :title="member.status === 'PENDING' ? t('cancelInvite') : t('removeMember')"
+            @click="emit('revoke', member)"
+          />
+        </template>
       </div>
+    </li>
+
+    <li
+      v-if="!members.length"
+      class="px-4 py-6 text-sm text-muted sm:px-6"
+    >
+      {{ t('noMembers') }}
     </li>
   </ul>
 </template>

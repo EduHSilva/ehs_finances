@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 
 data class TransactionsUiState(
     val loading: Boolean = false,
+    val refreshing: Boolean = false,
     val error: String? = null,
     val transactions: List<Transaction> = emptyList(),
     val categories: List<Category> = emptyList(),
@@ -75,6 +76,7 @@ class TransactionsViewModel(
     }
 
     fun refresh() {
+        _state.value = _state.value.copy(refreshing = true)
         reload.value++
     }
 
@@ -166,13 +168,14 @@ class TransactionsViewModel(
         if (accountId == null) {
             _state.value = _state.value.copy(
                 loading = false,
+                refreshing = false,
                 error = null,
                 transactions = emptyList(),
             )
             return
         }
 
-        _state.value = _state.value.copy(loading = true, error = null)
+        _state.value = _state.value.copy(loading = !_state.value.refreshing, error = null)
         try {
             if (!categoriesLoaded) {
                 val categories = runCatching { repository.categories() }.getOrNull()
@@ -182,12 +185,17 @@ class TransactionsViewModel(
                 }
             }
             val transactions = repository.transactions(accountId)
-            _state.value = _state.value.copy(loading = false, transactions = transactions)
+            _state.value = _state.value.copy(
+                loading = false,
+                refreshing = false,
+                transactions = transactions,
+            )
         } catch (e: ApiException) {
-            _state.value = _state.value.copy(loading = false, error = e.message)
+            _state.value = _state.value.copy(loading = false, refreshing = false, error = e.message)
         } catch (e: Exception) {
             _state.value = _state.value.copy(
                 loading = false,
+                refreshing = false,
                 error = e.message ?: "Não foi possível carregar as transações.",
             )
         }

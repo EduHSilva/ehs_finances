@@ -7,6 +7,11 @@ const toast = useToast()
 const loading = ref(false)
 const config = useRuntimeConfig()
 const { t } = useI18n()
+const inviteToken = useState<string>('account-invite-token', () => '')
+
+function postLoginRoute() {
+  return inviteToken.value ? '/settings/members' : '/dashboard'
+}
 
 type GoogleTokenResponse = {
   credential?: string
@@ -90,7 +95,7 @@ async function submitGoogle(idToken: string) {
     const response = await $userService.login(null, null, idToken)
     getTokenCookie().value = { token: response.data.token }
     useUser().value = response.data
-    await navigateTo('/dashboard')
+    await navigateTo(postLoginRoute())
   } catch {
     toast.add({ title: t('attention'), description: t('googleLoginFailed'), color: 'error' })
   } finally {
@@ -134,7 +139,7 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
     const response = await $userService.login(payload.data.email, payload.data.password)
     getTokenCookie().value = { token: response.data.token }
     useUser().value = response.data
-    await navigateTo('/dashboard')
+    await navigateTo(postLoginRoute())
   } catch {
     toast.add({ title: $t('attention'), description: $t('loginError'), color: 'error' })
   } finally {

@@ -22,6 +22,9 @@ export function useFinancialAccounts() {
   )
 
   watch(() => [visibleAccounts.value, activeAccountId.value], () => {
+    // Antes do primeiro carregamento a lista está vazia; validar agora
+    // descartaria a conta salva no cookie e cairia sempre na primeira.
+    if (!loaded.value || !visibleAccounts.value.length) return
     if (activeAccountId.value && !visibleAccounts.value.some(account => account.id === activeAccountId.value)) {
       activeAccountId.value = visibleAccounts.value[0]?.id || ''
     } else if (!activeAccountId.value && visibleAccounts.value[0]) {

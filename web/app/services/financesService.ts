@@ -1,4 +1,4 @@
-import type { CashflowProjection, Category, DashboardPending, FinancePreferences, FinancialAccount, GoalContribution, InvestmentSummary, MonthlyGoal, MonthlyGoalSummary, Recurrence, Transaction } from '~/types'
+import type { CashflowProjection, Category, DashboardPending, FinancePreferences, FinancialAccount, GoalContribution, InvestmentSummary, MonthlyGoal, MonthlyGoalSummary, Recurrence, Transaction, AccountMember, AccountMembers, IncomingAccountInvite } from '~/types'
 import type { DefaultResponse, Page } from '~/utils/types'
 import { getTokenCookie } from '~/utils/util'
 import { apiFetch } from '~/utils/apiFetch'
@@ -125,6 +125,13 @@ export interface FinancesService {
   getGoalSummary(id: string, periodMonth: string): Promise<DefaultResponse<MonthlyGoalSummary>>
   contributeToGoal(id: string, contribution: GoalContribution): Promise<DefaultResponse<void>>
   getProjection(accountId: string, days?: number): Promise<DefaultResponse<CashflowProjection>>
+  getAccountMembers(accountId: string): Promise<DefaultResponse<AccountMembers>>
+  inviteAccountMember(accountId: string, email: string): Promise<DefaultResponse<AccountMember>>
+  resendAccountInvite(accountId: string, memberId: string): Promise<DefaultResponse<AccountMember>>
+  revokeAccountMember(accountId: string, memberId: string): Promise<DefaultResponse<void>>
+  getAccountInvites(): Promise<DefaultResponse<IncomingAccountInvite[]>>
+  acceptAccountInvite(token: string): Promise<DefaultResponse<void>>
+  declineAccountInvite(token: string): Promise<DefaultResponse<void>>
 }
 
 export default function financesService({ apiUrl }: FinancesServiceOptions): FinancesService {
@@ -249,6 +256,27 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
     }),
     getInvestmentSummary: accountId => apiFetch(`${baseUrl}dashboard/investments`, {
       headers: authHeaders(), query: { accountId }
+    }),
+    getAccountMembers: accountId => apiFetch(`${baseUrl}accounts/${accountId}/members`, {
+      headers: authHeaders()
+    }),
+    inviteAccountMember: (accountId, email) => apiFetch(`${baseUrl}accounts/${accountId}/members`, {
+      headers: authHeaders(), method: 'POST', body: { email }
+    }),
+    resendAccountInvite: (accountId, memberId) => apiFetch(`${baseUrl}accounts/${accountId}/members/${memberId}/resend`, {
+      headers: authHeaders(), method: 'POST'
+    }),
+    revokeAccountMember: (accountId, memberId) => apiFetch(`${baseUrl}accounts/${accountId}/members/${memberId}`, {
+      headers: authHeaders(), method: 'DELETE'
+    }),
+    getAccountInvites: () => apiFetch(`${baseUrl}account-invites`, {
+      headers: authHeaders()
+    }),
+    acceptAccountInvite: token => apiFetch(`${baseUrl}account-invites/accept`, {
+      headers: authHeaders(), method: 'POST', body: { token }
+    }),
+    declineAccountInvite: token => apiFetch(`${baseUrl}account-invites/decline`, {
+      headers: authHeaders(), method: 'POST', body: { token }
     })
   }
 }

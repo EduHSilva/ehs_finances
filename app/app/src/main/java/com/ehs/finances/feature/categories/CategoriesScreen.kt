@@ -59,6 +59,7 @@ import com.ehs.finances.core.ui.components.FormDialog
 import com.ehs.finances.core.ui.components.FormError
 import com.ehs.finances.core.ui.components.LoadingScreen
 import com.ehs.finances.core.ui.components.PrimaryButton
+import com.ehs.finances.core.ui.components.RefreshableColumn
 import com.ehs.finances.core.ui.components.ScreenTitle
 import com.ehs.finances.core.ui.components.SwitchRow
 import com.ehs.finances.core.ui.components.Tag
@@ -85,7 +86,9 @@ fun CategoriesScreen() {
     var editing by remember { mutableStateOf<Category?>(null) }
     var deleteTarget by remember { mutableStateOf<Category?>(null) }
 
-    Column(
+    RefreshableColumn(
+        isRefreshing = state.refreshing,
+        onRefresh = vm::refresh,
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())

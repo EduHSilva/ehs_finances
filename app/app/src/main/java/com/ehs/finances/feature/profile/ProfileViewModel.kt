@@ -4,9 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ehs.finances.core.network.ApiException
 import com.ehs.finances.core.ui.UiMessage
+import com.ehs.finances.data.model.AccountMember
+import com.ehs.finances.data.model.AccountMembers
 import com.ehs.finances.data.model.FinancialAccountInput
+import com.ehs.finances.data.model.IncomingAccountInvite
 import com.ehs.finances.data.repository.AuthRepository
 import com.ehs.finances.data.repository.FinanceState
+import com.ehs.finances.data.repository.FinancesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,14 +23,22 @@ data class ProfileUiState(
     val loading: Boolean = false,
     val creatingAccount: Boolean = false,
     val accountsError: String? = null,
+    val members: AccountMembers? = null,
+    val membersLoading: Boolean = false,
+    val membersError: String? = null,
+    val memberActionRunning: Boolean = false,
+    val incomingInvites: List<IncomingAccountInvite> = emptyList(),
+    val invitesLoading: Boolean = false,
     val error: UiMessage? = null,
 )
 
 class ProfileViewModel(
     private val authRepository: AuthRepository,
     private val financeState: FinanceState,
+    private val financesRepository: FinancesRepository,
 ) : ViewModel() {
     private val session = authRepository.currentSession.value
+    private var membersAccountId: String? = null
 
     private val _state = MutableStateFlow(
         ProfileUiState(
@@ -62,6 +74,7 @@ class ProfileViewModel(
             } finally {
                 _state.value = _state.value.copy(loading = false)
             }
+            loadInvites()
         }
     }
 
@@ -117,7 +130,10 @@ class ProfileViewModel(
         }
     }
 
-    fun setActiveAccount(accountId: String) = financeState.setActiveAccount(accountId)
+    fun setActiveAccount(accountId: String) {
+        financeState.setActiveAccount(accountId)
+        loadMembers()
+    }
 
     /** Salva a preferência de exibir a conta PJ, como o checkbox da tela de configurações do web. */
     fun setShowBusinessAccount(value: Boolean) {
@@ -129,6 +145,140 @@ class ProfileViewModel(
                 )
             } catch (e: Exception) {
                 _message.value = UiMessage.Res("preferencesSaveFailed")
+            }
+        }
+    }
+
+    fun loadMembers() {
+        val accountId = financeState.activeAccountId.value
+        if (accountId == null) {
+            membersAccountId = null
+            _state.value = _state.value.copy(members = null, membersError = null)
+            return
+        }
+        viewModelScope.launch {
+            _state.value = _state.value.copy(membersLoading = true, membersError = null)
+            try {
+                val members = financesRepository.accountMembers(accountId)
+                membersAccountId = accountId
+                _state.value = _state.value.copy(members = members)
+            } catch (e: ApiException) {
+                _state.value = _state.value.copy(membersError = e.message)
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(membersError = e.message)
+            } finally {
+                _state.value = _state.value.copy(membersLoading = false)
+            }
+        }
+    }
+
+    fun inviteMember(email: String) {
+        val accountId = financeState.activeAccountId.value ?: return
+        if (_state.value.memberActionRunning) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(memberActionRunning = true)
+            try {
+                financesRepository.inviteAccountMember(accountId, email)
+                _message.value = UiMessage.Res("inviteSent")
+                loadMembers()
+            } catch (e: ApiException) {
+                _message.value = UiMessage.Text(e.message)
+            } catch (e: Exception) {
+                _message.value = UiMessage.Res("inviteSendFailed")
+            } finally {
+                _state.value = _state.value.copy(memberActionRunning = false)
+            }
+        }
+    }
+
+    fun resendInvite(member: AccountMember) {
+        val accountId = membersAccountId ?: return
+        if (_state.value.memberActionRunning) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(memberActionRunning = true)
+            try {
+                financesRepository.resendAccountInvite(accountId, member.id)
+                _message.value = UiMessage.Res("inviteResent")
+                loadMembers()
+            } catch (e: ApiException) {
+                _message.value = UiMessage.Text(e.message)
+            } catch (e: Exception) {
+                _message.value = UiMessage.Res("inviteSendFailed")
+            } finally {
+                _state.value = _state.value.copy(memberActionRunning = false)
+            }
+        }
+    }
+
+    fun revokeMember(member: AccountMember) {
+        val accountId = membersAccountId ?: return
+        if (_state.value.memberActionRunning) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(memberActionRunning = true)
+            try {
+                financesRepository.revokeAccountMember(accountId, member.id)
+                _message.value = UiMessage.Res(
+                    if (member.isActive) "memberRemoved" else "inviteCancelled",
+                )
+                loadMembers()
+            } catch (e: ApiException) {
+                _message.value = UiMessage.Text(e.message)
+            } catch (e: Exception) {
+                _message.value = UiMessage.Res("memberRemoveFailed")
+            } finally {
+                _state.value = _state.value.copy(memberActionRunning = false)
+            }
+        }
+    }
+
+    fun loadInvites() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(invitesLoading = true)
+            try {
+                val invites = financesRepository.accountInvites()
+                _state.value = _state.value.copy(incomingInvites = invites)
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(incomingInvites = emptyList())
+            } finally {
+                _state.value = _state.value.copy(invitesLoading = false)
+            }
+        }
+    }
+
+    fun acceptInvite(invite: IncomingAccountInvite) {
+        if (_state.value.memberActionRunning) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(memberActionRunning = true)
+            try {
+                financesRepository.acceptAccountInvite(invite.id)
+                _message.value = UiMessage.Res("inviteAccepted")
+                financeState.load(force = true)
+                loadMembers()
+                loadInvites()
+            } catch (e: ApiException) {
+                _message.value = UiMessage.Text(e.message)
+            } catch (e: Exception) {
+                _message.value = UiMessage.Res("inviteAcceptFailed")
+            } finally {
+                _state.value = _state.value.copy(memberActionRunning = false)
+            }
+        }
+    }
+
+    fun declineInvite(invite: IncomingAccountInvite) {
+        if (_state.value.memberActionRunning) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(memberActionRunning = true)
+            try {
+                financesRepository.declineAccountInvite(invite.id)
+                _message.value = UiMessage.Res("inviteDeclined")
+                loadInvites()
+            } catch (e: ApiException) {
+                _message.value = UiMessage.Text(e.message)
+            } catch (e: Exception) {
+                _message.value = UiMessage.Res("inviteDeclineFailed")
+            } finally {
+                _state.value = _state.value.copy(memberActionRunning = false)
             }
         }
     }

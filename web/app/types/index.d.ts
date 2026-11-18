@@ -1,9 +1,8 @@
-import type { AvatarProps } from '@nuxt/ui'
-
 export type TransactionStatus = 'OK' | 'PENDING' | 'REVIEW' | 'DELAY' | 'DELETED'
 export type RecurrenceStatus = 'ACTIVE' | 'PENDING' | 'INACTIVE' | 'PAYED' | 'DELETED'
 export type SaleStatus = 'paid' | 'failed' | 'refunded'
 export type FinancialAccountType = 'PF' | 'PJ'
+export type FinancialAccountRole = 'OWNER' | 'MEMBER'
 
 export interface FinancialAccount {
   id: string
@@ -12,6 +11,42 @@ export interface FinancialAccount {
   currency: string
   openingBalance: number
   balance: number
+  role?: FinancialAccountRole
+}
+
+export type AccountMemberStatus = 'PENDING' | 'ACTIVE' | 'DECLINED' | 'REVOKED' | 'EXPIRED'
+
+export interface AccountMember {
+  id: string
+  accountId: string
+  email: string
+  name?: string | null
+  userId?: string | null
+  status: AccountMemberStatus
+  expiresAt?: string | null
+  acceptedAt?: string | null
+  createdAt?: string | null
+  token?: string | null
+}
+
+export interface AccountMembers {
+  accountId: string
+  accountName: string
+  ownerId: string
+  ownerName?: string | null
+  ownerEmail?: string | null
+  members: AccountMember[]
+}
+
+export interface IncomingAccountInvite {
+  id: string
+  accountId: string
+  accountName: string
+  ownerId: string
+  ownerName?: string | null
+  ownerEmail?: string | null
+  email: string
+  expiresAt?: string | null
 }
 
 export interface FinancePreferences {
@@ -168,13 +203,6 @@ export interface Mail {
   subject: string
   body: string
   date: string
-}
-
-export interface Member {
-  name: string
-  username: string
-  role: 'member' | 'owner'
-  avatar: AvatarProps
 }
 
 export interface Sale {

@@ -3,6 +3,8 @@ package com.ehs.finances.data.repository
 import com.ehs.finances.core.network.apiCall
 import com.ehs.finances.core.network.unwrap
 import com.ehs.finances.data.mappers.toModel
+import com.ehs.finances.data.model.AccountMember
+import com.ehs.finances.data.model.AccountMembers
 import com.ehs.finances.data.model.CashflowProjection
 import com.ehs.finances.data.model.Category
 import com.ehs.finances.data.model.CategoryInput
@@ -11,6 +13,7 @@ import com.ehs.finances.data.model.FinancePreferences
 import com.ehs.finances.data.model.FinancialAccount
 import com.ehs.finances.data.model.FinancialAccountInput
 import com.ehs.finances.data.model.GoalContribution
+import com.ehs.finances.data.model.IncomingAccountInvite
 import com.ehs.finances.data.model.InvestmentSummary
 import com.ehs.finances.data.model.MonthlyGoal
 import com.ehs.finances.data.model.MonthlyGoalInput
@@ -30,6 +33,7 @@ import com.ehs.finances.data.remote.ConfirmValueRequest
 import com.ehs.finances.data.remote.CreateFinanceAccountRequest
 import com.ehs.finances.data.remote.FinancesApi
 import com.ehs.finances.data.remote.GoalContributionRequest
+import com.ehs.finances.data.remote.InviteAccountMemberRequest
 import com.ehs.finances.data.remote.MonthlyGoalRequest
 import com.ehs.finances.data.remote.ReviewImportedTransactionRequest
 import com.ehs.finances.data.remote.StatementImportLineRequest
@@ -352,6 +356,37 @@ class FinancesRepository(private val api: FinancesApi) {
 
     suspend fun investments(accountId: String): InvestmentSummary = apiCall {
         api.investments(accountId).unwrap().toModel()
+    }
+
+    // ----- Membros e convites da conta ---------------------------------------
+
+    suspend fun accountMembers(accountId: String): AccountMembers = apiCall {
+        api.accountMembers(accountId).unwrap().toModel()
+    }
+
+    suspend fun inviteAccountMember(accountId: String, email: String): AccountMember = apiCall {
+        api.inviteAccountMember(accountId, InviteAccountMemberRequest(email.trim()))
+            .unwrap().toModel()
+    }
+
+    suspend fun resendAccountInvite(accountId: String, memberId: String): AccountMember = apiCall {
+        api.resendAccountInvite(accountId, memberId).unwrap().toModel()
+    }
+
+    suspend fun revokeAccountMember(accountId: String, memberId: String) {
+        apiCall { api.revokeAccountMember(accountId, memberId) }
+    }
+
+    suspend fun accountInvites(): List<IncomingAccountInvite> = apiCall {
+        api.accountInvites().unwrap().map { it.toModel() }
+    }
+
+    suspend fun acceptAccountInvite(inviteId: String) {
+        apiCall { api.acceptAccountInvite(inviteId) }
+    }
+
+    suspend fun declineAccountInvite(inviteId: String) {
+        apiCall { api.declineAccountInvite(inviteId) }
     }
 
     private companion object {
