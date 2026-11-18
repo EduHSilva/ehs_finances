@@ -5,7 +5,13 @@ import com.ehs.finances.data.model.AccountMember
 import com.ehs.finances.data.model.AccountMembers
 import com.ehs.finances.data.model.CashflowProjection
 import com.ehs.finances.data.model.Category
+import com.ehs.finances.data.model.CategoryShare
+import com.ehs.finances.data.model.DashboardCash
+import com.ehs.finances.data.model.DashboardInvestments
+import com.ehs.finances.data.model.DashboardNetWorth
 import com.ehs.finances.data.model.DashboardPending
+import com.ehs.finances.data.model.DashboardSummary
+import com.ehs.finances.data.model.LivingCost
 import com.ehs.finances.data.model.FinancePreferences
 import com.ehs.finances.data.model.FinancialAccount
 import com.ehs.finances.data.model.IncomingAccountInvite
@@ -26,7 +32,13 @@ import com.ehs.finances.data.remote.AccountMemberDto
 import com.ehs.finances.data.remote.AccountMembersDto
 import com.ehs.finances.data.remote.CashflowProjectionDto
 import com.ehs.finances.data.remote.CategoryDto
+import com.ehs.finances.data.remote.CategoryShareDto
+import com.ehs.finances.data.remote.DashboardCashDto
+import com.ehs.finances.data.remote.DashboardInvestmentsDto
+import com.ehs.finances.data.remote.DashboardNetWorthDto
 import com.ehs.finances.data.remote.DashboardPendingDto
+import com.ehs.finances.data.remote.DashboardSummaryDto
+import com.ehs.finances.data.remote.LivingCostDto
 import com.ehs.finances.data.remote.FinanceAccountDto
 import com.ehs.finances.data.remote.FinancePreferencesDto
 import com.ehs.finances.data.remote.IncomingAccountInviteDto
@@ -167,6 +179,52 @@ fun InvestmentSummaryDto.toModel(): InvestmentSummary = InvestmentSummary(
     totalWithdrawals = totalWithdrawals,
     balance = balance,
     currency = currency,
+)
+
+fun DashboardCashDto.toModel(): DashboardCash = DashboardCash(
+    currentBalance = currentBalance,
+    monthIncome = monthIncome,
+    monthExpenses = monthExpenses,
+    monthNet = monthNet,
+    projectedClosingBalance = projectedClosingBalance,
+)
+
+fun DashboardInvestmentsDto.toModel(): DashboardInvestments = DashboardInvestments(
+    total = total,
+    monthContributions = monthContributions,
+    monthWithdrawals = monthWithdrawals,
+    monthNet = monthNet,
+    projectedClosingBalance = projectedClosingBalance,
+)
+
+fun DashboardNetWorthDto.toModel(): DashboardNetWorth = DashboardNetWorth(
+    current = current,
+    projected = projected,
+)
+
+fun LivingCostDto.toModel(): LivingCost = LivingCost(
+    monthlyAverage = monthlyAverage,
+    months = months,
+    total = total,
+)
+
+fun CategoryShareDto.toModel(): CategoryShare = CategoryShare(
+    categoryId = categoryId,
+    title = title,
+    color = color,
+    amount = amount,
+    share = share,
+)
+
+fun DashboardSummaryDto.toModel(): DashboardSummary = DashboardSummary(
+    accountId = accountId,
+    horizonDays = horizonDays,
+    calculatedAt = calculatedAt,
+    cash = cash.toModel(),
+    investments = investments.toModel(),
+    netWorth = netWorth.toModel(),
+    livingCost = livingCost.toModel(),
+    topCategories = topCategories.map(CategoryShareDto::toModel),
 )
 
 fun PendingItemDto.toModel(): PendingItem = PendingItem(

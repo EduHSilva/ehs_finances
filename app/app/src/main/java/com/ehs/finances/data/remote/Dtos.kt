@@ -320,6 +320,58 @@ data class InvestmentSummaryDto(
 )
 
 @Serializable
+data class DashboardSummaryDto(
+    val accountId: String = "",
+    val horizonDays: Int = 90,
+    val calculatedAt: String? = null,
+    val cash: DashboardCashDto = DashboardCashDto(),
+    val investments: DashboardInvestmentsDto = DashboardInvestmentsDto(),
+    val netWorth: DashboardNetWorthDto = DashboardNetWorthDto(),
+    val livingCost: LivingCostDto = LivingCostDto(),
+    val topCategories: List<CategoryShareDto> = emptyList(),
+)
+
+@Serializable
+data class DashboardCashDto(
+    val currentBalance: Double = 0.0,
+    val monthIncome: Double = 0.0,
+    val monthExpenses: Double = 0.0,
+    val monthNet: Double = 0.0,
+    val projectedClosingBalance: Double = 0.0,
+)
+
+@Serializable
+data class DashboardInvestmentsDto(
+    val total: Double = 0.0,
+    val monthContributions: Double = 0.0,
+    val monthWithdrawals: Double = 0.0,
+    val monthNet: Double = 0.0,
+    val projectedClosingBalance: Double = 0.0,
+)
+
+@Serializable
+data class DashboardNetWorthDto(
+    val current: Double = 0.0,
+    val projected: Double = 0.0,
+)
+
+@Serializable
+data class LivingCostDto(
+    val monthlyAverage: Double = 0.0,
+    val months: Int = 6,
+    val total: Double = 0.0,
+)
+
+@Serializable
+data class CategoryShareDto(
+    val categoryId: String? = null,
+    val title: String? = null,
+    val color: String? = null,
+    val amount: Double = 0.0,
+    val share: Double = 0.0,
+)
+
+@Serializable
 data class DashboardPendingDto(
     val accountId: String = "",
     val horizonDays: Int = 30,

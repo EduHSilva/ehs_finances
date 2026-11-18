@@ -60,7 +60,13 @@ class AuthRepository(
 
     suspend fun refreshUser() {
         val dto = apiCall { api.me().unwrap() }
-        session.updateUser(dto.toAuthUser())
+        val current = session.session.value
+        val token = dto.token?.takeIf { it.isNotBlank() }
+        if (current != null && token != null) {
+            session.save(current.copy(token = token, user = dto.toAuthUser()))
+        } else {
+            session.updateUser(dto.toAuthUser())
+        }
     }
 
     suspend fun updateUsername(username: String) {

@@ -171,6 +171,42 @@ export interface InvestmentSummary {
   currency: string
 }
 
+export interface DashboardSummary {
+  accountId: string
+  horizonDays: number
+  calculatedAt: string
+  cash: {
+    currentBalance: number
+    monthIncome: number
+    monthExpenses: number
+    monthNet: number
+    projectedClosingBalance: number
+  }
+  investments: {
+    total: number
+    monthContributions: number
+    monthWithdrawals: number
+    monthNet: number
+    projectedClosingBalance: number
+  }
+  netWorth: {
+    current: number
+    projected: number
+  }
+  livingCost: {
+    monthlyAverage: number
+    months: number
+    total: number
+  }
+  topCategories: Array<{
+    categoryId?: string | null
+    title?: string | null
+    color?: string | null
+    amount: number
+    share: number
+  }>
+}
+
 export interface PendingItem {
   id: string
   kind: 'TRANSACTION' | 'RECURRENCE'

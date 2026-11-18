@@ -9,6 +9,7 @@ import com.ehs.finances.data.model.CashflowProjection
 import com.ehs.finances.data.model.Category
 import com.ehs.finances.data.model.CategoryInput
 import com.ehs.finances.data.model.DashboardPending
+import com.ehs.finances.data.model.DashboardSummary
 import com.ehs.finances.data.model.FinancePreferences
 import com.ehs.finances.data.model.FinancialAccount
 import com.ehs.finances.data.model.FinancialAccountInput
@@ -356,6 +357,10 @@ class FinancesRepository(private val api: FinancesApi) {
 
     suspend fun investments(accountId: String): InvestmentSummary = apiCall {
         api.investments(accountId).unwrap().toModel()
+    }
+
+    suspend fun summary(accountId: String, days: Int): DashboardSummary = apiCall {
+        api.summary(accountId, days).unwrap().toModel()
     }
 
     // ----- Membros e convites da conta ---------------------------------------

@@ -125,3 +125,15 @@
   materializa as recorrências antes.
 - `/dashboard/investments`: aportes (despesas) e resgates (receitas) da classificação
   `INVESTMENT`, com líquido.
+- `/dashboard/summary`: agrega o mês corrente e o horizonte de projeção (30–180, padrão 90).
+  - Mês: receitas e despesas até hoje; `monthNet = receitas − despesas` (resultado do mês).
+  - Investimentos: `total` = líquido `INVESTMENT` de todos os tempos + `initialBalance` das
+    metas + contribuições de ajuste de meta. `monthContributions`/`monthWithdrawals` são do
+    mês corrente. Projeção = total + média do líquido `INVESTMENT` dos 3 meses completos
+    anteriores × dias/30, nunca negativa.
+  - Custo médio de vida: média mensal das despesas `ESSENTIAL` dos 6 meses completos
+    anteriores ao mês corrente.
+  - `topCategories`: 5 categorias com maior despesa no mês corrente, com participação %
+    sobre as despesas do mês.
+  - Patrimônio: `current = saldo atual + total investido`; `projected = saldo projetado +
+    investimentos projetados`.

@@ -1,7 +1,9 @@
 import { parseDate } from '@internationalized/date'
 
 export function getTokenCookie() {
-  return useCookie<{ token: string | null } | null>('token')
+  // Persistente: sem maxAge o cookie morria ao fechar o navegador. A validade real
+  // da sessão é a do JWT, renovada por `/users/auth/me` a cada carregamento.
+  return useCookie<{ token: string | null } | null>('token', { maxAge: 60 * 60 * 24 * 30 })
 }
 
 export function formatCurrency(value: number) {

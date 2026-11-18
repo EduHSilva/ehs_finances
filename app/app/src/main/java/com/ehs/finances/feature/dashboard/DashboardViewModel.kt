@@ -6,7 +6,7 @@ import com.ehs.finances.core.network.ApiException
 import com.ehs.finances.core.ui.UiMessage
 import com.ehs.finances.data.model.CashflowProjection
 import com.ehs.finances.data.model.DashboardPending
-import com.ehs.finances.data.model.InvestmentSummary
+import com.ehs.finances.data.model.DashboardSummary
 import com.ehs.finances.data.model.PendingItem
 import com.ehs.finances.data.model.Recurrence
 import com.ehs.finances.data.repository.FinanceState
@@ -26,8 +26,8 @@ data class DashboardUiState(
     val refreshing: Boolean = false,
     val error: String? = null,
     val projection: CashflowProjection? = null,
+    val summary: DashboardSummary? = null,
     val pending: DashboardPending? = null,
-    val investments: InvestmentSummary? = null,
     val recurrences: List<Recurrence> = emptyList(),
     val confirmingId: String? = null,
 )
@@ -99,8 +99,8 @@ class DashboardViewModel(
                 refreshing = false,
                 error = null,
                 projection = null,
+                summary = null,
                 pending = null,
-                investments = null,
                 recurrences = emptyList(),
             )
             return
@@ -114,8 +114,8 @@ class DashboardViewModel(
         try {
             coroutineScope {
                 val projectionDeferred = async { repository.projection(accountId, horizon) }
+                val summaryDeferred = async { runCatching { repository.summary(accountId, horizon) }.getOrNull() }
                 val pendingDeferred = async { runCatching { repository.pending(accountId, horizon) }.getOrNull() }
-                val investmentsDeferred = async { runCatching { repository.investments(accountId) }.getOrNull() }
                 val recurrencesDeferred = async { runCatching { repository.recurrences(accountId) }.getOrDefault(emptyList()) }
 
                 val projection = projectionDeferred.await()
@@ -123,8 +123,8 @@ class DashboardViewModel(
                     loading = false,
                     refreshing = false,
                     projection = projection,
+                    summary = summaryDeferred.await(),
                     pending = pendingDeferred.await(),
-                    investments = investmentsDeferred.await(),
                     recurrences = recurrencesDeferred.await(),
                 )
             }

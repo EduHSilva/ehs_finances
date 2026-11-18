@@ -181,6 +181,12 @@ interface FinancesApi {
         @Query("accountId") accountId: String,
     ): Envelope<InvestmentSummaryDto>
 
+    @GET("finances/dashboard/summary")
+    suspend fun summary(
+        @Query("accountId") accountId: String,
+        @Query("days") days: Int,
+    ): Envelope<DashboardSummaryDto>
+
     @GET("finances/accounts/{accountId}/members")
     suspend fun accountMembers(
         @Path("accountId") accountId: String,

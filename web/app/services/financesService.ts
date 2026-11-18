@@ -1,4 +1,4 @@
-import type { CashflowProjection, Category, DashboardPending, FinancePreferences, FinancialAccount, GoalContribution, InvestmentSummary, MonthlyGoal, MonthlyGoalSummary, Recurrence, Transaction, AccountMember, AccountMembers, IncomingAccountInvite } from '~/types'
+import type { CashflowProjection, Category, DashboardPending, DashboardSummary, FinancePreferences, FinancialAccount, GoalContribution, InvestmentSummary, MonthlyGoal, MonthlyGoalSummary, Recurrence, Transaction, AccountMember, AccountMembers, IncomingAccountInvite } from '~/types'
 import type { DefaultResponse, Page } from '~/utils/types'
 import { getTokenCookie } from '~/utils/util'
 import { apiFetch } from '~/utils/apiFetch'
@@ -118,6 +118,7 @@ export interface FinancesService {
   confirmRecurrence(id: string, value?: number): Promise<DefaultResponse<Recurrence>>
   getPending(accountId: string, days?: number): Promise<DefaultResponse<DashboardPending>>
   getInvestmentSummary(accountId: string): Promise<DefaultResponse<InvestmentSummary>>
+  getDashboardSummary(accountId: string, days?: number): Promise<DefaultResponse<DashboardSummary>>
   getGoals(accountId: string, periodMonth: string): Promise<DefaultResponse<Page<MonthlyGoal>>>
   createGoal(goal: MonthlyGoalRequest): Promise<DefaultResponse<MonthlyGoal>>
   updateGoal(id: string, goal: MonthlyGoalRequest): Promise<DefaultResponse<MonthlyGoal>>
@@ -256,6 +257,9 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
     }),
     getInvestmentSummary: accountId => apiFetch(`${baseUrl}dashboard/investments`, {
       headers: authHeaders(), query: { accountId }
+    }),
+    getDashboardSummary: (accountId, days = 90) => apiFetch(`${baseUrl}dashboard/summary`, {
+      headers: authHeaders(), query: { accountId, days }
     }),
     getAccountMembers: accountId => apiFetch(`${baseUrl}accounts/${accountId}/members`, {
       headers: authHeaders()

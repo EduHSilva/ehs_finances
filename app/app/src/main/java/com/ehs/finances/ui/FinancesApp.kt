@@ -142,7 +142,11 @@ private fun AuthenticatedApp(container: AppContainer) {
 
     val showChrome = route == null || tabs.any { it.route == route }
 
-    LaunchedEffect(Unit) { container.financeState.load() }
+    LaunchedEffect(Unit) {
+        container.financeState.load()
+        // Renova o token ao abrir o app; falha de rede não derruba a sessão salva.
+        runCatching { container.authRepository.refreshUser() }
+    }
 
     CompositionLocalProvider(LocalSnackbarHost provides snackbarHostState) {
         Scaffold(
@@ -188,7 +192,6 @@ private fun AuthenticatedApp(container: AppContainer) {
                 composable(Routes.DASHBOARD) {
                     DashboardScreen(
                         onOpenProfile = { navController.navigateOnce(Routes.PROFILE) },
-                        onOpenGoals = { navController.switchTab(Routes.GOALS) },
                     )
                 }
                 composable(Routes.TRANSACTIONS) {

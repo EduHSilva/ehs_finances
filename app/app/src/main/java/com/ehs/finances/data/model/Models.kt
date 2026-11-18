@@ -150,6 +150,52 @@ data class InvestmentSummary(
     val currency: String,
 )
 
+data class DashboardCash(
+    val currentBalance: Double,
+    val monthIncome: Double,
+    val monthExpenses: Double,
+    val monthNet: Double,
+    val projectedClosingBalance: Double,
+)
+
+data class DashboardInvestments(
+    val total: Double,
+    val monthContributions: Double,
+    val monthWithdrawals: Double,
+    val monthNet: Double,
+    val projectedClosingBalance: Double,
+)
+
+data class DashboardNetWorth(
+    val current: Double,
+    val projected: Double,
+)
+
+data class LivingCost(
+    val monthlyAverage: Double,
+    val months: Int,
+    val total: Double,
+)
+
+data class CategoryShare(
+    val categoryId: String?,
+    val title: String?,
+    val color: String?,
+    val amount: Double,
+    val share: Double,
+)
+
+data class DashboardSummary(
+    val accountId: String,
+    val horizonDays: Int,
+    val calculatedAt: String?,
+    val cash: DashboardCash,
+    val investments: DashboardInvestments,
+    val netWorth: DashboardNetWorth,
+    val livingCost: LivingCost,
+    val topCategories: List<CategoryShare>,
+)
+
 data class PendingItem(
     val id: String,
     val kind: String,

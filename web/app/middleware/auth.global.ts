@@ -11,7 +11,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (token.value?.token && !user.value) {
     try {
-      user.value = (await $userService.getUser()).data
+      const response = await $userService.getUser()
+      user.value = response.data
+      if (response.data?.token) {
+        token.value = { token: response.data.token }
+      }
     } catch {
       token.value = null
     }
