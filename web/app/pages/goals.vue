@@ -28,7 +28,8 @@ const createSchema = z.object({
   initialBalance: z.coerce.number().min(0).optional(),
   objective: z.coerce.number().min(0).optional(),
   dtInicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  dtFim: z.union([z.literal(''), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)])
+  dtFim: z.union([z.literal(''), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]),
+  reserve: z.boolean().optional()
 }).refine(value => value.mode !== 'PERCENT_INCOME' || value.amount <= 100, {
   path: ['amount'],
   message: t('percentageMaximum')
@@ -46,7 +47,7 @@ type CreateSchema = z.output<typeof createSchema>
 type ContributionSchema = z.output<typeof contributionSchema>
 
 const createState = reactive<Partial<CreateSchema>>({
-  title: '', mode: 'FIXED', amount: undefined, initialBalance: undefined, objective: undefined, dtInicio: '', dtFim: ''
+  title: '', mode: 'FIXED', amount: undefined, initialBalance: undefined, objective: undefined, dtInicio: '', dtFim: '', reserve: false
 })
 const contributionState = reactive<{ amount?: number, date: string, adjustment: boolean }>({ amount: undefined, date: '', adjustment: false })
 
@@ -196,7 +197,8 @@ function openGoalEditor(goal?: MonthlyGoal) {
         initialBalance: goal.initialBalance ?? 0,
         objective: goal.objective ?? undefined,
         dtInicio: goal.dtInicio || `${goal.periodMonth}-01`,
-        dtFim: goal.dtFim || ''
+        dtFim: goal.dtFim || '',
+        reserve: goal.reserve ?? false
       }
     : {
         title: '',
@@ -205,7 +207,8 @@ function openGoalEditor(goal?: MonthlyGoal) {
         initialBalance: undefined,
         objective: undefined,
         dtInicio: monthBoundary('start'),
-        dtFim: monthBoundary('end')
+        dtFim: monthBoundary('end'),
+        reserve: false
       })
   newGoalOpen.value = true
 }
@@ -230,7 +233,8 @@ async function onCreateGoal(event: FormSubmitEvent<CreateSchema>) {
     periodMonth: event.data.dtInicio.slice(0, 7),
     dtInicio: event.data.dtInicio,
     dtFim: event.data.dtFim || null,
-    active: true
+    active: true,
+    reserve: Boolean(event.data.reserve)
   }
   try {
     if (editingGoal.value) await update(editingGoal.value.id, request, account.id, monthKey.value)
@@ -238,7 +242,7 @@ async function onCreateGoal(event: FormSubmitEvent<CreateSchema>) {
     newGoalOpen.value = false
     editingGoal.value = null
     Object.assign(createState, {
-      title: '', mode: 'FIXED', amount: undefined, initialBalance: undefined, objective: undefined, dtInicio: '', dtFim: ''
+      title: '', mode: 'FIXED', amount: undefined, initialBalance: undefined, objective: undefined, dtInicio: '', dtFim: '', reserve: false
     })
     toast.add({ title: t(wasEditing ? 'goalUpdated' : 'goalCreated'), color: 'success', icon: 'i-lucide-check' })
   } catch {
@@ -357,6 +361,9 @@ const modeItems = computed(() => [
                       <UBadge v-if="goal.recurring" size="xs" color="primary" variant="subtle" class="ml-1">
                         {{ $t('recurringGoal') }}
                       </UBadge>
+                      <UBadge v-if="goal.reserve" size="xs" color="warning" variant="subtle" class="ml-1">
+                        {{ $t('reserveBadge') }}
+                      </UBadge>
                     </p>
                     <p v-if="initialBalanceFor(goal) > 0" class="text-xs text-muted">
                       {{ $t('initialBalance') }}: {{ formatCurrency(initialBalanceFor(goal)) }}
@@ -470,6 +477,13 @@ const modeItems = computed(() => [
                   <UInput v-model="createState.dtFim" type="date" class="w-full" />
                 </UFormField>
               </div>
+              <UFormField name="reserve">
+                <UCheckbox
+                  v-model="createState.reserve"
+                  :label="$t('reserveGoal')"
+                  :description="$t('reserveGoalHelp')"
+                />
+              </UFormField>
               <p class="text-xs text-muted">
                 {{ $t('goalAccountHelp', { account: activeAccount?.name || '' }) }}
               </p>

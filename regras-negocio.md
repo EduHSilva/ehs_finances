@@ -98,6 +98,9 @@
 - Apagar aporte/meta apaga os lançamentos gerados por ele.
 - Saldo inicial só é editável enquanto a meta não tem aportes ("meta zerada" = ainda sem
   aportes); não existe estado "concluída" automático.
+- `reserve`: no máximo uma meta por conta pode ser marcada como reserva; marcar outra
+  desmarca a anterior. A reserva não é o caixa: é o valor acumulado da meta (saldo inicial +
+  aportes/ajustes) e alimenta os "meses de reserva" na dashboard.
 
 ## Importação de extrato
 
@@ -133,6 +136,9 @@
     anteriores × dias/30, nunca negativa.
   - Custo médio de vida: média mensal das despesas `ESSENTIAL` dos 6 meses completos
     anteriores ao mês corrente.
+  - `livingCost.reserve`: meta marcada como reserva (`total` = acumulado da meta desde o
+    início; `months` = total ÷ custo médio de vida, 1 casa). Sem meta marcada ou sem custo
+    médio, `reserve`/`months` vêm nulos e a dashboard mostra "—".
   - `topCategories`: 5 categorias com maior despesa no mês corrente, com participação %
     sobre as despesas do mês.
   - Patrimônio: `current = saldo atual + total investido`; `projected = saldo projetado +

@@ -69,6 +69,7 @@ export interface MonthlyGoal {
   dtFim?: string | null
   recurring?: boolean
   active?: boolean
+  reserve?: boolean
 }
 
 export interface GoalContribution {
@@ -197,6 +198,12 @@ export interface DashboardSummary {
     monthlyAverage: number
     months: number
     total: number
+    reserve?: {
+      goalId?: string | null
+      title?: string | null
+      total: number
+      months: number | null
+    } | null
   }
   topCategories: Array<{
     categoryId?: string | null

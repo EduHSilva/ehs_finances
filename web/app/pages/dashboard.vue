@@ -57,11 +57,7 @@ const yAxisLabels = computed(() => [chartMax.value, (chartMax.value + chartMin.v
 
 const numberLocale = computed(() => locale.value === 'pt' ? 'pt-BR' : 'en-US')
 const monthLabel = computed(() => new Intl.DateTimeFormat(numberLocale.value, { month: 'long', year: 'numeric' }).format(new Date()))
-const reserveMonths = computed(() => {
-  const average = summary.value?.livingCost.monthlyAverage ?? 0
-  if (average <= 0) return null
-  return (summary.value?.cash.currentBalance ?? 0) / average
-})
+const reserveMonths = computed(() => summary.value?.livingCost.reserve?.months ?? null)
 const reserveMonthsLabel = computed(() => {
   if (reserveMonths.value == null) return '—'
   const formatted = new Intl.NumberFormat(numberLocale.value, { maximumFractionDigits: 1 }).format(reserveMonths.value)
@@ -285,10 +281,16 @@ onMounted(async () => {
               </p>
               <dl class="mt-4 space-y-3 border-t border-default pt-4 text-sm">
                 <div class="flex items-baseline justify-between gap-4">
-                  <dt class="shrink-0 text-muted">
-                    {{ $t('reserveMonths') }}
+                  <dt class="min-w-0 text-muted">
+                    <span class="block">{{ $t('reserveMonths') }}</span>
+                    <span
+                      v-if="summary?.livingCost.reserve?.title"
+                      class="block truncate text-xs"
+                    >
+                      {{ summary.livingCost.reserve.title }}
+                    </span>
                   </dt>
-                  <dd class="font-medium tabular-nums">
+                  <dd class="shrink-0 font-medium tabular-nums">
                     {{ reserveMonthsLabel }}
                   </dd>
                 </div>

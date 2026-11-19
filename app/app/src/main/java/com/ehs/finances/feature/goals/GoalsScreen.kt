@@ -295,6 +295,14 @@ private fun GoalCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (goal.reserve) {
+                    Text(
+                        strings["reserveBadge"],
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
                 if (state.initialBalance(goal) > 0) {
                     Text(
                         "${strings["initialBalance"]}: ${Money.format(state.initialBalance(goal), strings.locale)}",
@@ -479,6 +487,7 @@ private fun GoalFormDialog(
     var end by remember {
         mutableStateOf(goal?.dtFim?.let { ApiDates.parse(it) } ?: defaultEnd)
     }
+    var reserve by remember { mutableStateOf(goal?.reserve == true) }
     var error by remember { mutableStateOf<String?>(null) }
 
     FormDialog(
@@ -509,6 +518,7 @@ private fun GoalFormDialog(
                         periodMonth = start.format(DateTimeFormatter.ofPattern("yyyy-MM")),
                         dtInicio = start.format(DateTimeFormatter.ISO_LOCAL_DATE),
                         dtFim = if (hasEnd) end.format(DateTimeFormatter.ISO_LOCAL_DATE) else null,
+                        reserve = reserve,
                     ),
                 )
             }
@@ -564,6 +574,12 @@ private fun GoalFormDialog(
         if (hasEnd) {
             AppDateField(label = strings["endDate"], date = end, onChange = { end = it })
         }
+        SwitchRow(
+            title = strings["reserveGoal"],
+            subtitle = strings["reserveGoalHelp"],
+            checked = reserve,
+            onCheckedChange = { reserve = it },
+        )
         FormError(error?.let { strings[it] })
     }
 }

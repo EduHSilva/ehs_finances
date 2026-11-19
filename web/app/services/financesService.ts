@@ -18,6 +18,7 @@ export interface MonthlyGoalRequest {
   dtInicio?: string | null
   dtFim?: string | null
   active?: boolean
+  reserve?: boolean
 }
 
 export interface CreateTransactionRequest {

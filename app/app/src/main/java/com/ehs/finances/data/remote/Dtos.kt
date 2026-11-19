@@ -265,6 +265,7 @@ data class MonthlyGoalDto(
     val dtFim: String? = null,
     val recurring: Boolean = false,
     val active: Boolean = true,
+    val reserve: Boolean = false,
 )
 
 @Serializable
@@ -279,6 +280,7 @@ data class MonthlyGoalRequest(
     val dtInicio: String? = null,
     val dtFim: String? = null,
     val active: Boolean,
+    val reserve: Boolean = false,
 )
 
 @Serializable
@@ -360,6 +362,15 @@ data class LivingCostDto(
     val monthlyAverage: Double = 0.0,
     val months: Int = 6,
     val total: Double = 0.0,
+    val reserve: ReserveDto? = null,
+)
+
+@Serializable
+data class ReserveDto(
+    val goalId: String? = null,
+    val title: String? = null,
+    val total: Double = 0.0,
+    val months: Double? = null,
 )
 
 @Serializable

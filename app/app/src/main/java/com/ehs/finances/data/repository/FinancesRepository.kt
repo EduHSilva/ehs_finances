@@ -343,6 +343,7 @@ class FinancesRepository(private val api: FinancesApi) {
             dtInicio = dtInicio,
             dtFim = dtFim,
             active = active,
+            reserve = reserve,
         )
 
     // ----- Painel -----------------------------------------------------------

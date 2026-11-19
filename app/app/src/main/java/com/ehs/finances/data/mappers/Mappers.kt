@@ -23,6 +23,7 @@ import com.ehs.finances.data.model.PendingItem
 import com.ehs.finances.data.model.ProjectionItem
 import com.ehs.finances.data.model.ProjectionPoint
 import com.ehs.finances.data.model.Recurrence
+import com.ehs.finances.data.model.Reserve
 import com.ehs.finances.data.model.StatementImportPreview
 import com.ehs.finances.data.model.StatementImportPreviewLine
 import com.ehs.finances.data.model.StatementImportResult
@@ -49,6 +50,7 @@ import com.ehs.finances.data.remote.PendingItemDto
 import com.ehs.finances.data.remote.ProjectionItemDto
 import com.ehs.finances.data.remote.ProjectionPointDto
 import com.ehs.finances.data.remote.RecurrenceDto
+import com.ehs.finances.data.remote.ReserveDto
 import com.ehs.finances.data.remote.StatementImportPreviewDto
 import com.ehs.finances.data.remote.StatementImportPreviewLineDto
 import com.ehs.finances.data.remote.StatementImportResultDto
@@ -155,6 +157,7 @@ fun MonthlyGoalDto.toModel(): MonthlyGoal = MonthlyGoal(
     dtFim = dtFim,
     recurring = recurring,
     active = active,
+    reserve = reserve,
 )
 
 fun MonthlyGoalSummaryDto.toModel(): MonthlyGoalSummary = MonthlyGoalSummary(
@@ -206,6 +209,14 @@ fun LivingCostDto.toModel(): LivingCost = LivingCost(
     monthlyAverage = monthlyAverage,
     months = months,
     total = total,
+    reserve = reserve?.toModel(),
+)
+
+fun ReserveDto.toModel(): Reserve = Reserve(
+    goalId = goalId,
+    title = title,
+    total = total,
+    months = months,
 )
 
 fun CategoryShareDto.toModel(): CategoryShare = CategoryShare(

@@ -117,6 +117,7 @@ data class MonthlyGoal(
     val dtFim: String?,
     val recurring: Boolean,
     val active: Boolean,
+    val reserve: Boolean = false,
 )
 
 data class MonthlyGoalSummary(
@@ -175,6 +176,14 @@ data class LivingCost(
     val monthlyAverage: Double,
     val months: Int,
     val total: Double,
+    val reserve: Reserve? = null,
+)
+
+data class Reserve(
+    val goalId: String?,
+    val title: String?,
+    val total: Double,
+    val months: Double?,
 )
 
 data class CategoryShare(

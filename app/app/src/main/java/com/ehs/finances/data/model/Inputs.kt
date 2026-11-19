@@ -38,6 +38,7 @@ data class MonthlyGoalInput(
     val periodMonth: String,
     val dtInicio: String?,
     val dtFim: String?,
+    val reserve: Boolean = false,
 )
 
 data class FinancialAccountInput(

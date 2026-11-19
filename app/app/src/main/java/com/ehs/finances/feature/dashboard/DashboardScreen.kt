@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -177,51 +176,44 @@ fun DashboardScreen(
                     }
                 }
 
-                Row(
-                    modifier = Modifier.height(IntrinsicSize.Max),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    val monthNet = cash?.monthNet ?: 0.0
-                    SummaryMetricCard(
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                        title = strings["cash"],
-                        primary = Money.format(cash?.currentBalance ?: projection.currentBalance, strings.locale),
-                        rows = listOf(
-                            MetricRow(
-                                label = strings["monthResult"],
-                                value = signedMoney(monthNet, strings.locale),
-                                caption = "${strings["monthIncome"]} ${Money.format(cash?.monthIncome ?: 0.0, strings.locale)} · " +
-                                    "${strings["monthExpense"]} ${Money.format(cash?.monthExpenses ?: 0.0, strings.locale)}",
-                                color = amountColor(monthNet),
-                            ),
-                            MetricRow(
-                                label = strings["projectedClosingBalance"],
-                                value = Money.format(cash?.projectedClosingBalance ?: projection.closingBalance, strings.locale),
-                            ),
+                val monthNet = cash?.monthNet ?: 0.0
+                SummaryMetricCard(
+                    title = strings["cash"],
+                    primary = Money.format(cash?.currentBalance ?: projection.currentBalance, strings.locale),
+                    rows = listOf(
+                        MetricRow(
+                            label = strings["monthResult"],
+                            value = signedMoney(monthNet, strings.locale),
+                            caption = "${strings["monthIncome"]} ${Money.format(cash?.monthIncome ?: 0.0, strings.locale)} · " +
+                                "${strings["monthExpense"]} ${Money.format(cash?.monthExpenses ?: 0.0, strings.locale)}",
+                            color = amountColor(monthNet),
                         ),
-                    )
+                        MetricRow(
+                            label = strings["projectedClosingBalance"],
+                            value = Money.format(cash?.projectedClosingBalance ?: projection.closingBalance, strings.locale),
+                        ),
+                    ),
+                )
 
-                    val investmentMonthNet = investments?.monthNet ?: 0.0
-                    SummaryMetricCard(
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                        title = strings["investments"],
-                        primary = Money.format(investments?.total ?: 0.0, strings.locale),
-                        rows = listOf(
-                            MetricRow(
-                                label = strings["monthNet"],
-                                value = signedMoney(investmentMonthNet, strings.locale),
-                                caption = "${strings["contributions"]} ${Money.format(investments?.monthContributions ?: 0.0, strings.locale)} · " +
-                                    "${strings["withdrawals"]} ${Money.format(investments?.monthWithdrawals ?: 0.0, strings.locale)}",
-                                color = amountColor(investmentMonthNet),
-                            ),
-                            MetricRow(
-                                label = strings["projectedClosingBalance"],
-                                value = Money.format(investments?.projectedClosingBalance ?: 0.0, strings.locale),
-                                caption = strings["investmentProjectionHelp"],
-                            ),
+                val investmentMonthNet = investments?.monthNet ?: 0.0
+                SummaryMetricCard(
+                    title = strings["investments"],
+                    primary = Money.format(investments?.total ?: 0.0, strings.locale),
+                    rows = listOf(
+                        MetricRow(
+                            label = strings["monthNet"],
+                            value = signedMoney(investmentMonthNet, strings.locale),
+                            caption = "${strings["contributions"]} ${Money.format(investments?.monthContributions ?: 0.0, strings.locale)} · " +
+                                "${strings["withdrawals"]} ${Money.format(investments?.monthWithdrawals ?: 0.0, strings.locale)}",
+                            color = amountColor(investmentMonthNet),
                         ),
-                    )
-                }
+                        MetricRow(
+                            label = strings["projectedClosingBalance"],
+                            value = Money.format(investments?.projectedClosingBalance ?: 0.0, strings.locale),
+                            caption = strings["investmentProjectionHelp"],
+                        ),
+                    ),
+                )
 
                 val livingCost = summary?.livingCost
                 ContentCard {
@@ -252,13 +244,24 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                strings["reserveMonths"],
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            livingCost?.reserve?.title?.let { title ->
+                                Text(
+                                    title,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
                         Text(
-                            strings["reserveMonths"],
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            reserveMonthsLabel(livingCost?.monthlyAverage ?: 0.0, cash?.currentBalance ?: 0.0, strings),
+                            reserveMonthsValue(livingCost?.reserve?.months, strings),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
@@ -537,13 +540,12 @@ private fun amountColor(value: Double): Color = when {
     else -> MaterialTheme.colorScheme.onSurface
 }
 
-private fun reserveMonthsLabel(
-    monthlyAverage: Double,
-    currentBalance: Double,
+private fun reserveMonthsValue(
+    months: Double?,
     strings: com.ehs.finances.core.i18n.Strings,
 ): String {
-    if (monthlyAverage <= 0.0) return "—"
-    val value = String.format(strings.locale, "%.1f", currentBalance / monthlyAverage)
+    if (months == null) return "—"
+    val value = String.format(strings.locale, "%.1f", months)
     return strings.format("reserveMonthsValue", "count" to value)
 }
 
