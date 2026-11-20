@@ -20,6 +20,7 @@ const props = defineProps<{
 }>()
 
 const categoryLabel = useCategoryLabel()
+const { t } = useI18n()
 
 const CLASSIFICATIONS = ['ESSENTIAL', 'INVESTMENT', 'RECREATION'] as const
 
@@ -29,12 +30,15 @@ const totalRealized = computed(() => props.rows.reduce((total, row) => total + r
 const groups = computed(() => CLASSIFICATIONS
   .map((key) => {
     const rows = props.rows.filter(row => (row.classification || 'ESSENTIAL').toUpperCase() === key)
-    return {
-      key,
-      rows,
-      expected: rows.reduce((total, row) => total + row.expected, 0),
-      realized: rows.reduce((total, row) => total + row.realized, 0)
-    }
+    const expected = rows.reduce((total, row) => total + row.expected, 0)
+    const realized = rows.reduce((total, row) => total + row.realized, 0)
+    const goal = rows.reduce((total, row) => total + row.goal, 0)
+    const achieved = expected > 0 ? realized / expected * 100 : null
+    const summary = [
+      goal > 0 ? `${t('categoryGoalsGoal')} ${goal}%` : null,
+      achieved !== null ? t('categoryGoalAchieved', { value: Math.round(achieved) }) : null
+    ].filter(Boolean).join(' · ') || t('noGoalSet')
+    return { key, rows, expected, realized, goal, achieved, summary }
   })
   .filter(group => group.rows.length > 0))
 </script>
@@ -56,9 +60,12 @@ const groups = computed(() => CLASSIFICATIONS
 
       <section v-for="group in groups" :key="group.key" class="space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-default pb-1.5">
-          <h3 class="text-xs font-semibold tracking-wide text-muted uppercase">
-            {{ $t(group.key.toLowerCase()) }}
-          </h3>
+          <div class="flex flex-wrap items-center gap-2">
+            <h3 class="text-xs font-semibold tracking-wide text-muted uppercase">
+              {{ $t(group.key.toLowerCase()) }}
+            </h3>
+            <span class="text-xs text-muted">{{ group.summary }}</span>
+          </div>
           <span class="text-xs text-muted">
             {{ $t('categoryGoalsSubtotal') }}: {{ formatCurrency(group.realized) }} /
             {{ formatCurrency(group.expected) }}

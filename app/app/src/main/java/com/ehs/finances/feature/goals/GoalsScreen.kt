@@ -198,10 +198,14 @@ fun GoalsScreen() {
                     } else {
                         categoryGoalGroups(report).forEachIndexed { index, (classification, rows) ->
                             if (index > 0) HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                            val realized = rows.sumOf { it.realized }
+                            val expected = rows.sumOf { it.expected }
                             CategoryGroupHeader(
                                 classification = classification,
-                                realized = rows.sumOf { it.realized },
-                                expected = rows.sumOf { it.expected },
+                                goalPercent = rows.sumOf { it.goal },
+                                achieved = if (expected > 0) realized / expected * 100.0 else null,
+                                realized = realized,
+                                expected = expected,
                             )
                             rows.forEach { row ->
                                 Spacer(Modifier.height(10.dp))
@@ -434,22 +438,40 @@ private fun categoryGoalGroups(rows: List<CategoryGoalRow>): List<Pair<String, L
     }
 
 @Composable
-private fun CategoryGroupHeader(classification: String, realized: Double, expected: Double) {
+private fun CategoryGroupHeader(
+    classification: String,
+    goalPercent: Int,
+    achieved: Double?,
+    realized: Double,
+    expected: Double,
+) {
     val strings = LocalStrings.current
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            classificationLabel(classification, strings) ?: classification,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+    val summary = listOfNotNull(
+        if (goalPercent > 0) "${strings["categoryGoalsGoal"]} $goalPercent%" else null,
+        achieved?.let { strings.format("categoryGoalAchieved", "value" to it.roundToInt()) },
+    ).joinToString(" · ").ifEmpty { strings["noGoalSet"] }
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                classificationLabel(classification, strings) ?: classification,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                summary,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
         Text(
             "${strings["categorySubtotal"]}: " +
                 "${Money.format(realized, strings.locale)} / ${Money.format(expected, strings.locale)}",
