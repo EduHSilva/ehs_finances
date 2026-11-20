@@ -361,7 +361,7 @@ data class DashboardNetWorthDto(
 
 @Serializable
 data class LivingCostDto(
-    val monthlyAverage: Double = 0.0,
+    val monthlyAverage: Double? = null,
     val months: Int = 6,
     val total: Double = 0.0,
     val reserve: ReserveDto? = null,

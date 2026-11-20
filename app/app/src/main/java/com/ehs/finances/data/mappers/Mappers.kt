@@ -78,6 +78,7 @@ fun TransactionDto.toModel(): Transaction = Transaction(
     category = category,
     categoryKey = categoryKey,
     classification = classification,
+    recurrence = recurrence,
     accountId = accountId,
 )
 

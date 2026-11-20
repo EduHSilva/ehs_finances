@@ -138,17 +138,21 @@ fun CategoriesScreen() {
             )
             state.filtered.isEmpty() -> EmptyNote(strings["noCategories"])
             else -> ContentCard {
-                state.filtered.forEachIndexed { index, category ->
-                    if (index > 0) HorizontalDivider(Modifier.padding(vertical = 10.dp))
-                    CategoryRow(
-                        category = category,
-                        deleting = state.deletingId == category.id,
-                        onEdit = {
-                            editing = category
-                            showForm = true
-                        },
-                        onDelete = { deleteTarget = category },
-                    )
+                val groups = listOf(state.income, state.expenses).filter { it.isNotEmpty() }
+                groups.forEachIndexed { groupIndex, rows ->
+                    if (groupIndex > 0) HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                    rows.forEachIndexed { index, category ->
+                        if (index > 0) HorizontalDivider(Modifier.padding(vertical = 10.dp))
+                        CategoryRow(
+                            category = category,
+                            deleting = state.deletingId == category.id,
+                            onEdit = {
+                                editing = category
+                                showForm = true
+                            },
+                            onDelete = { deleteTarget = category },
+                        )
+                    }
                 }
             }
         }

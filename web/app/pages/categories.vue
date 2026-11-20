@@ -6,7 +6,7 @@ import type { Category } from '~/types'
 import AddCategoryModal from '~/components/categories/AddCategoryModal.vue'
 
 const { $financesService } = useNuxtApp()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const categoryLabel = useCategoryLabel()
 
 const data = ref<Category[]>([])
@@ -34,6 +34,15 @@ async function confirmDelete(category: Category) {
   await $financesService.deleteCategory(category.id)
   await refresh()
 }
+
+function sortByGoalThenLabel(rows: Category[]) {
+  return [...rows].sort((a, b) =>
+    b.goal - a.goal
+    || categoryLabel(a.title, a.defaultKey).localeCompare(categoryLabel(b.title, b.defaultKey), locale.value))
+}
+
+const incomeData = computed(() => sortByGoalThenLabel(filteredData.value.filter(category => category.income)))
+const expenseData = computed(() => sortByGoalThenLabel(filteredData.value.filter(category => !category.income)))
 
 const modalRef = ref<InstanceType<typeof AddCategoryModal> | null>(null)
 
@@ -93,8 +102,19 @@ refresh()
           />
         </div>
         <ListCategories
-          :data="filteredData"
+          v-if="incomeData.length"
+          :data="incomeData"
           :title="$t('categories')"
+          @edit="openEditModal"
+          @delete="confirmDelete"
+        />
+        <USeparator
+          v-if="incomeData.length && expenseData.length"
+          class="my-4"
+        />
+        <ListCategories
+          :data="expenseData"
+          :title="incomeData.length ? undefined : $t('categories')"
           @edit="openEditModal"
           @delete="confirmDelete"
         />

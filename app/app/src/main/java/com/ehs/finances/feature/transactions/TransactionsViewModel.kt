@@ -100,7 +100,6 @@ class TransactionsViewModel(
         id: String?,
         input: TransactionInput,
         status: String = "OK",
-        updateCategory: Boolean = true,
     ) {
         if (_state.value.saving) return
         val accountId = financeState.activeAccount.value?.id
@@ -114,7 +113,7 @@ class TransactionsViewModel(
                 if (id == null) {
                     repository.createTransaction(accountId!!, input, status)
                 } else {
-                    repository.updateTransaction(id, input, updateCategory)
+                    repository.updateTransaction(id, input)
                 }
                 _message.value = UiMessage.Res("transactionSaved")
                 reload.value++

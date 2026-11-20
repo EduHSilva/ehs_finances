@@ -61,7 +61,6 @@ const state = reactive<Partial<Schema>>({
   payed: undefined
 })
 
-const canEditCategory = computed(() => !state.id || !props.recurrency?.categoryID)
 const categoryOptions = computed(() => props.categories
   .filter(category => category.income === state.income)
   .map(category => ({ ...category, title: categoryLabel(category.title, category.defaultKey) })))
@@ -101,7 +100,7 @@ function applyRecurrence(c: Recurrence) {
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   const { $financesService } = useNuxtApp()
-  if (canEditCategory.value && !event.data.categoryID) {
+  if (!event.data.categoryID) {
     toast.add({ title: $t('categoryRequired'), color: 'error' })
     return
   }
@@ -113,10 +112,6 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   }
 
   if (event.data.id) {
-    if (!canEditCategory.value) {
-      payload.categoryID = undefined
-      payload.income = undefined as unknown as boolean
-    }
     await $financesService.editRecurrence(event.data.id, payload)
     toast.add({
       title: 'Success',
@@ -231,7 +226,6 @@ defineExpose({ openModal, closeModal })
         </UFormField>
 
         <UFormField
-          v-if="canEditCategory"
           :label="$t('movementType')"
           name="income"
         >
@@ -242,25 +236,15 @@ defineExpose({ openModal, closeModal })
         </UFormField>
 
         <UFormField
-          v-if="canEditCategory"
           :label="$t('category')"
           name="categoryID"
+          :help="$t('recurrenceCategorySyncHint')"
         >
           <UInputMenu
             v-model="state.categoryID"
             value-key="id"
             label-key="title"
             :items="categoryOptions"
-            class="w-full"
-          />
-        </UFormField>
-        <UFormField
-          v-else
-          :label="$t('category')"
-        >
-          <UInput
-            :model-value="categoryLabel(props.recurrency?.category, props.recurrency?.categoryKey)"
-            disabled
             class="w-full"
           />
         </UFormField>

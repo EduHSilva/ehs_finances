@@ -134,6 +134,7 @@ export interface Transaction {
   categoryID?: string
   category?: string
   categoryKey?: string | null
+  recurrence?: string
   accountId?: string
   classification?: string
 }
@@ -195,7 +196,7 @@ export interface DashboardSummary {
     projected: number
   }
   livingCost: {
-    monthlyAverage: number
+    monthlyAverage: number | null
     months: number
     total: number
     reserve?: {

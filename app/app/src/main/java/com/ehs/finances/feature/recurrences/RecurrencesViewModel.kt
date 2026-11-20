@@ -65,7 +65,6 @@ class RecurrencesViewModel(
         id: String?,
         input: RecurrenceInput,
         status: String,
-        updateCategory: Boolean = true,
     ) {
         if (_state.value.saving) return
         val accountId = financeState.activeAccount.value?.id
@@ -79,7 +78,7 @@ class RecurrencesViewModel(
                 if (id == null) {
                     repository.createRecurrence(accountId!!, input, status)
                 } else {
-                    repository.updateRecurrence(id, input, status, updateCategory)
+                    repository.updateRecurrence(id, input, status)
                 }
                 _message.value = UiMessage.Res("recurrenceSaved")
                 _state.value = _state.value.copy(saving = false)

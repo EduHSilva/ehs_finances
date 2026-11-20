@@ -152,7 +152,6 @@ class FinancesRepository(private val api: FinancesApi) {
     suspend fun updateTransaction(
         id: String,
         input: TransactionInput,
-        updateCategory: Boolean = true,
     ): Transaction = apiCall {
         api.updateTransaction(
             id,
@@ -160,8 +159,8 @@ class FinancesRepository(private val api: FinancesApi) {
                 value = input.value,
                 title = input.title.trim(),
                 executionDate = ApiDates.toApi(input.executionDate),
-                categoryID = if (updateCategory) input.categoryId else null,
-                income = if (updateCategory) input.income else null,
+                categoryID = input.categoryId,
+                income = input.income,
             ),
         ).unwrap().toModel()
     }
@@ -257,7 +256,6 @@ class FinancesRepository(private val api: FinancesApi) {
         id: String,
         input: RecurrenceInput,
         status: String,
-        updateCategory: Boolean = true,
     ): Recurrence = apiCall {
         api.updateRecurrence(
             id,
@@ -267,8 +265,8 @@ class FinancesRepository(private val api: FinancesApi) {
                 installments = input.installments,
                 payed = input.payed,
                 value = input.value,
-                categoryID = if (updateCategory) input.categoryId else null,
-                income = if (updateCategory) input.income else null,
+                categoryID = input.categoryId,
+                income = input.income,
                 status = status,
             ),
         ).unwrap().toModel()

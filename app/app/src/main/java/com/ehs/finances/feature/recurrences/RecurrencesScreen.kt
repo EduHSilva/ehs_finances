@@ -172,8 +172,8 @@ fun RecurrencesScreen() {
             categories = state.categories,
             saving = state.saving,
             onDismiss = { showForm = false },
-            onSave = { input, status, updateCategory ->
-                vm.save(editing?.id, input, status, updateCategory)
+            onSave = { input, status ->
+                vm.save(editing?.id, input, status)
                 showForm = false
             },
         )
@@ -289,10 +289,9 @@ private fun RecurrenceFormDialog(
     categories: List<Category>,
     saving: Boolean,
     onDismiss: () -> Unit,
-    onSave: (input: RecurrenceInput, status: String, updateCategory: Boolean) -> Unit,
+    onSave: (input: RecurrenceInput, status: String) -> Unit,
 ) {
     val strings = LocalStrings.current
-    val canEditCategory = recurrence == null || recurrence.categoryId.isNullOrBlank()
 
     var title by remember { mutableStateOf(recurrence?.title.orEmpty()) }
     var value by remember {
@@ -323,7 +322,7 @@ private fun RecurrenceFormDialog(
                 title.isBlank() -> "titleRequired"
                 amount == null || amount <= 0.0 -> "valueInvalid"
                 dayValue == null || dayValue !in 1..31 -> "dayInvalid"
-                canEditCategory && categoryId.isBlank() -> "categoryRequired"
+                categoryId.isBlank() -> "categoryRequired"
                 type == "INSTALLMENT" && (total == null || total < 1) -> "installmentsInvalid"
                 type == "INSTALLMENT" && (payedValue < 0 || payedValue > total!!) -> "payedInvalid"
                 else -> null
@@ -341,7 +340,6 @@ private fun RecurrenceFormDialog(
                         payed = if (type == "INSTALLMENT") payedValue else null,
                     ),
                     recurrence?.status ?: "ACTIVE",
-                    canEditCategory,
                 )
             }
         },
@@ -379,32 +377,28 @@ private fun RecurrenceFormDialog(
                 onSelect = { type = it },
             )
         }
-        if (canEditCategory) {
-            SwitchRow(
-                title = strings["typeLabel"],
-                subtitle = strings[if (income) "income" else "expense"],
-                checked = income,
-                onCheckedChange = { checked ->
-                    income = checked
-                    val selected = categories.firstOrNull { it.id == categoryId }
-                    if (selected != null && selected.income != checked) categoryId = ""
-                },
-            )
-            AppDropdown(
-                label = strings["categoryLabel"],
-                options = categoryOptions,
-                selectedValue = categoryId,
-                onSelect = { categoryId = it },
-                placeholder = strings["selectCategory"],
-            )
-        } else {
-            val selected = categories.firstOrNull { it.id == recurrence?.categoryId }
-            AppTextField(
-                value = selected?.let { categoryLabel(it, strings) }
-                    ?: categoryLabel(recurrence?.category, recurrence?.categoryKey, strings),
-                onValueChange = {},
-                label = strings["categoryLabel"],
-                enabled = false,
+        SwitchRow(
+            title = strings["typeLabel"],
+            subtitle = strings[if (income) "income" else "expense"],
+            checked = income,
+            onCheckedChange = { checked ->
+                income = checked
+                val selected = categories.firstOrNull { it.id == categoryId }
+                if (selected != null && selected.income != checked) categoryId = ""
+            },
+        )
+        AppDropdown(
+            label = strings["categoryLabel"],
+            options = categoryOptions,
+            selectedValue = categoryId,
+            onSelect = { categoryId = it },
+            placeholder = strings["selectCategory"],
+        )
+        if (recurrence != null) {
+            Text(
+                strings["recurrenceCategorySyncHint"],
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         if (type == "INSTALLMENT") {

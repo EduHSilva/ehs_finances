@@ -37,7 +37,6 @@ const state = reactive<Partial<Schema>>({
   executionDate: undefined
 })
 
-const canEditCategory = computed(() => !state.id || !props.transaction?.categoryID)
 const NO_CATEGORY = '__no_category__'
 const categoryOptions = computed(() => [
   { id: NO_CATEGORY, title: t('noCategory') },
@@ -86,7 +85,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       title: event.data.title,
       value: event.data.value,
       executionDate,
-      ...(canEditCategory.value ? { categoryID: selectedCategoryId(event.data.categoryID), income: event.data.income } : {})
+      categoryID: selectedCategoryId(event.data.categoryID),
+      income: event.data.income
     })
     toast.add({
       title: 'Success',
@@ -189,7 +189,6 @@ defineExpose({ openModal, closeModal })
         </UFormField>
 
         <UFormField
-          v-if="canEditCategory"
           :label="$t('type')"
           name="income"
         >
@@ -200,25 +199,15 @@ defineExpose({ openModal, closeModal })
         </UFormField>
 
         <UFormField
-          v-if="canEditCategory"
           :label="$t('category')"
           name="category"
+          :help="props.transaction?.recurrence ? $t('recurrenceCategorySyncHint') : undefined"
         >
           <UInputMenu
             v-model="state.categoryID"
             value-key="id"
             label-key="title"
             :items="categoryOptions"
-            class="w-full"
-          />
-        </UFormField>
-        <UFormField
-          v-else
-          :label="$t('category')"
-        >
-          <UInput
-            :model-value="categoryLabel(props.transaction?.category, props.transaction?.categoryKey)"
-            disabled
             class="w-full"
           />
         </UFormField>

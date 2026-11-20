@@ -230,52 +230,63 @@ fun DashboardScreen(
                 ContentCard {
                     SectionHeader(
                         title = strings["livingCost"],
-                        subtitle = strings.format("livingCostHelp", "months" to (livingCost?.months ?: 6)),
+                        subtitle = livingCost?.monthlyAverage?.let {
+                            strings.format("livingCostHelp", "months" to (livingCost?.months ?: 6))
+                        },
                     )
                     Spacer(Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.Bottom) {
+                    val livingCostAverage = livingCost?.monthlyAverage
+                    if (livingCostAverage == null) {
                         Text(
-                            Money.format(livingCost?.monthlyAverage ?: 0.0, strings.locale),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            strings["perMonth"],
+                            strings["livingCostInsufficient"],
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 3.dp),
                         )
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    HorizontalDivider(color = FinancesTheme.colors.border)
-                    Spacer(Modifier.height(10.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(Modifier.weight(1f)) {
+                    } else {
+                        Row(verticalAlignment = Alignment.Bottom) {
                             Text(
-                                strings["reserveMonths"],
+                                Money.format(livingCostAverage, strings.locale),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                strings["perMonth"],
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 3.dp),
                             )
-                            livingCost?.reserve?.title?.let { title ->
-                                Text(
-                                    title,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
                         }
-                        Text(
-                            reserveMonthsValue(livingCost?.reserve?.months, strings),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                        )
+                        Spacer(Modifier.height(10.dp))
+                        HorizontalDivider(color = FinancesTheme.colors.border)
+                        Spacer(Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    strings["reserveMonths"],
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                livingCost?.reserve?.title?.let { title ->
+                                    Text(
+                                        title,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                            Text(
+                                reserveMonthsValue(livingCost?.reserve?.months, strings),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
                     }
                 }
 

@@ -24,6 +24,7 @@ data class Transaction(
     val category: String,
     val categoryKey: String? = null,
     val classification: String?,
+    val recurrence: String? = null,
     val accountId: String? = null,
 )
 
@@ -173,7 +174,7 @@ data class DashboardNetWorth(
 )
 
 data class LivingCost(
-    val monthlyAverage: Double,
+    val monthlyAverage: Double?,
     val months: Int,
     val total: Double,
     val reserve: Reserve? = null,

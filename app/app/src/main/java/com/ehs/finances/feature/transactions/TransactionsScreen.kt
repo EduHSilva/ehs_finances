@@ -237,8 +237,8 @@ fun TransactionsScreen(onOpenImport: (review: Boolean) -> Unit) {
             categories = state.categories,
             saving = state.saving,
             onDismiss = { showForm = false },
-            onSave = { input, status, updateCategory ->
-                vm.save(editing?.id, input, status, updateCategory)
+            onSave = { input, status ->
+                vm.save(editing?.id, input, status)
                 showForm = false
             },
         )
@@ -394,14 +394,13 @@ private fun TransactionFormDialog(
     categories: List<Category>,
     saving: Boolean,
     onDismiss: () -> Unit,
-    onSave: (input: TransactionInput, status: String, updateCategory: Boolean) -> Unit,
+    onSave: (input: TransactionInput, status: String) -> Unit,
 ) {
     val strings = LocalStrings.current
     val initialCategory = remember(transaction) {
         transaction?.categoryId?.takeIf { it.isNotBlank() }
             ?: categories.firstOrNull { it.title == transaction?.category }?.id
     }
-    val canEditCategory = transaction == null || transaction.categoryId.isNullOrBlank()
 
     var title by remember { mutableStateOf(transaction?.title.orEmpty()) }
     var value by remember {
@@ -438,7 +437,6 @@ private fun TransactionFormDialog(
                         executionDate = date,
                     ),
                     if (pending) "PENDING" else "OK",
-                    canEditCategory,
                 )
             }
         },
@@ -455,32 +453,28 @@ private fun TransactionFormDialog(
             label = strings["valueLabel"],
             keyboardType = KeyboardType.Decimal,
         )
-        if (canEditCategory) {
-            SwitchRow(
-                title = strings["typeLabel"],
-                subtitle = if (income) strings["income"] else strings["expense"],
-                checked = income,
-                onCheckedChange = { checked ->
-                    income = checked
-                    val selected = categories.firstOrNull { it.id == categoryId }
-                    if (selected != null && selected.income != checked) categoryId = ""
-                },
-            )
-            AppDropdown(
-                label = strings["categoryLabel"],
-                options = categoryOptions,
-                selectedValue = categoryId,
-                onSelect = { categoryId = it },
-                placeholder = strings["selectCategory"],
-            )
-        } else {
-            val selected = categories.firstOrNull { it.id == transaction?.categoryId }
-            AppTextField(
-                value = selected?.let { categoryLabel(it, strings) }
-                    ?: categoryLabel(transaction?.category, transaction?.categoryKey, strings),
-                onValueChange = {},
-                label = strings["categoryLabel"],
-                enabled = false,
+        SwitchRow(
+            title = strings["typeLabel"],
+            subtitle = if (income) strings["income"] else strings["expense"],
+            checked = income,
+            onCheckedChange = { checked ->
+                income = checked
+                val selected = categories.firstOrNull { it.id == categoryId }
+                if (selected != null && selected.income != checked) categoryId = ""
+            },
+        )
+        AppDropdown(
+            label = strings["categoryLabel"],
+            options = categoryOptions,
+            selectedValue = categoryId,
+            onSelect = { categoryId = it },
+            placeholder = strings["selectCategory"],
+        )
+        if (transaction?.recurrence != null) {
+            Text(
+                strings["recurrenceCategorySyncHint"],
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         AppDateField(

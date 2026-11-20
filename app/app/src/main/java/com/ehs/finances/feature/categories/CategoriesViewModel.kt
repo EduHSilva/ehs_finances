@@ -36,6 +36,15 @@ data class CategoriesUiState(
             }
         }
 
+    val income: List<Category>
+        get() = sortedForDisplay(filtered.filter { it.income })
+
+    val expenses: List<Category>
+        get() = sortedForDisplay(filtered.filterNot { it.income })
+
+    private fun sortedForDisplay(rows: List<Category>) =
+        rows.sortedWith(compareByDescending<Category> { it.goal }.thenBy { it.title.lowercase() })
+
     companion object {
         const val TYPE_ALL = "__all"
         const val TYPE_INCOME = "income"

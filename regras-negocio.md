@@ -53,6 +53,9 @@
   o `goal` é sempre 0.
 - Renomear uma categoria padrão a marca como `customized`.
 - Exclusão é soft delete; lançamentos antigos continuam apontando para ela (oculta).
+- Nas telas, receitas aparecem primeiro, um separador e depois as despesas; dentro de cada
+  grupo a ordem é meta (%) decrescente e depois título alfabético. A API devolve na mesma
+  ordem (receitas primeiro, meta decrescente, título).
 
 ## Lançamentos (transações)
 
@@ -61,8 +64,11 @@
   Valor mínimo 0,01, título obrigatório, data de execução obrigatória.
 - Só `OK` entra no saldo; `PENDING`/`REVIEW` não contam até a confirmação.
 - A categoria precisa ter a mesma direção do lançamento.
-- Na edição, categoria e direção só podem ser trocadas se o lançamento ainda não tem
-  categoria. `DELETED` no `PUT` é rejeitado — exclusão é só pelo `DELETE`.
+- Categoria e direção podem ser trocadas a qualquer momento na edição. Em lançamento
+  vinculado a recorrência, a troca atualiza a categoria da recorrência e das ocorrências
+  pendentes; as confirmadas mantêm o histórico. `DELETED` no `PUT` é rejeitado — exclusão
+  é só pelo `DELETE`.
+- A listagem é ordenada por data de execução, mais recente primeiro.
 - Confirmar um `PENDING` aceita um novo valor (> 0) e passa para `OK`; em parcela de
   recorrência, avança o contador e marca a recorrência como `PAYED` na última.
 - Lançamentos importados nascem `REVIEW` e vão para `OK` na aprovação (com categoria
@@ -73,6 +79,8 @@
 - Tipos: `INSTALLMENT` (número de parcelas) e `MONTH` (todo mês).
 - Status: `ACTIVE`, `PENDING`, `INACTIVE`, `PAYED`, `DELETED`.
 - O dia do mês é 1–31 e é ajustado para o último dia em meses curtos.
+- A categoria pode ser editada a qualquer momento; a troca atualiza as ocorrências
+  pendentes e futuras (as confirmadas mantêm o histórico).
 - As ocorrências são geradas sob demanda como lançamentos `PENDING`, uma por mês,
   olhando até 12 meses atrás; parcelamento respeita o total de parcelas.
 - Confirmar a ocorrência pode alterar o valor **somente daquele lançamento**; o modelo
@@ -137,12 +145,15 @@
   - Investimentos: `total` = líquido `INVESTMENT` de todos os tempos + `initialBalance` das
     metas + contribuições de ajuste de meta. `monthContributions`/`monthWithdrawals` são do
     mês corrente. Projeção = total + média do líquido `INVESTMENT` dos 3 meses completos
-    anteriores × dias/30, nunca negativa.
-  - Custo médio de vida: média mensal das despesas `ESSENTIAL` dos 6 meses completos
-    anteriores ao mês corrente.
+    anteriores dividida pelos meses dessa janela que têm dados (até 3; sem dados = 0)
+    × dias/30, nunca negativa.
+  - Custo médio de vida: soma das despesas `ESSENTIAL` dos 6 meses completos anteriores ao
+    mês corrente, dividida pela quantidade de meses dessa janela que têm dados (1–6).
+    `livingCost.months` é essa quantidade. Com menos de 3 meses de dados, `monthlyAverage`
+    vem nulo e web/app mostram "continue usando o sistema" no lugar do valor.
   - `livingCost.reserve`: meta marcada como reserva (`total` = acumulado da meta desde o
     início; `months` = total ÷ custo médio de vida, 1 casa). Sem meta marcada ou sem custo
-    médio, `reserve`/`months` vêm nulos e a dashboard mostra "—".
+    médio suficiente, `reserve.months` vem nulo e a dashboard mostra "—".
   - `topCategories`: 5 categorias com maior despesa no mês corrente, com participação %
     sobre as despesas do mês.
   - Patrimônio: `current = saldo atual + total investido`; `projected = saldo projetado +

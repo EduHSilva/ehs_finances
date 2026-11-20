@@ -58,6 +58,7 @@ const yAxisLabels = computed(() => [chartMax.value, (chartMax.value + chartMin.v
 const numberLocale = computed(() => locale.value === 'pt' ? 'pt-BR' : 'en-US')
 const monthLabel = computed(() => new Intl.DateTimeFormat(numberLocale.value, { month: 'long', year: 'numeric' }).format(new Date()))
 const reserveMonths = computed(() => summary.value?.livingCost.reserve?.months ?? null)
+const hasLivingCost = computed(() => summary.value?.livingCost.monthlyAverage != null)
 const reserveMonthsLabel = computed(() => {
   if (reserveMonths.value == null) return '—'
   const formatted = new Intl.NumberFormat(numberLocale.value, { maximumFractionDigits: 1 }).format(reserveMonths.value)
@@ -273,13 +274,25 @@ onMounted(async () => {
             <UPageCard
               variant="subtle"
               :title="$t('livingCost')"
-              :description="$t('livingCostHelp', { months: summary?.livingCost.months ?? 6 })"
+              :description="hasLivingCost ? $t('livingCostHelp', { months: summary?.livingCost.months ?? 6 }) : undefined"
             >
-              <p class="text-2xl font-semibold tabular-nums">
+              <p
+                v-if="hasLivingCost"
+                class="text-2xl font-semibold tabular-nums"
+              >
                 {{ formatCurrency(summary?.livingCost.monthlyAverage ?? 0) }}
                 <span class="text-sm font-normal text-muted">{{ $t('perMonth') }}</span>
               </p>
-              <dl class="mt-4 space-y-3 border-t border-default pt-4 text-sm">
+              <p
+                v-else
+                class="text-sm text-muted"
+              >
+                {{ $t('livingCostInsufficient') }}
+              </p>
+              <dl
+                v-if="hasLivingCost"
+                class="mt-4 space-y-3 border-t border-default pt-4 text-sm"
+              >
                 <div class="flex items-baseline justify-between gap-4">
                   <dt class="min-w-0 text-muted">
                     <span class="block">{{ $t('reserveMonths') }}</span>
