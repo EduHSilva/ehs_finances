@@ -30,7 +30,11 @@ data class DashboardUiState(
     val pending: DashboardPending? = null,
     val recurrences: List<Recurrence> = emptyList(),
     val confirmingId: String? = null,
-)
+) {
+    /** Há fatura/compra de cartão nas pendências: mostra o atalho para a tela de cartões. */
+    val hasCardPendings: Boolean
+        get() = pending?.items.orEmpty().any { it.isInvoice || !it.canConfirm }
+}
 
 class DashboardViewModel(
     private val financeState: FinanceState,
@@ -71,11 +75,12 @@ class DashboardViewModel(
     }
 
     fun confirmPending(item: PendingItem, value: Double) {
-        if (_state.value.confirmingId != null) return
+        // TRANSFER e INVOICE não são confirmadas por aqui (só abrem a tela correspondente).
+        if (!item.canConfirm || _state.value.confirmingId != null) return
         viewModelScope.launch {
             _state.value = _state.value.copy(confirmingId = item.id)
             try {
-                if (item.kind.equals("TRANSACTION", ignoreCase = true)) {
+                if (item.isTransaction) {
                     repository.confirmTransaction(item.id, value)
                 } else {
                     repository.confirmRecurrence(item.id, value)

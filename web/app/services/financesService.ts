@@ -1,4 +1,4 @@
-import type { CashflowProjection, Category, DashboardPending, DashboardSummary, FinancePreferences, FinancialAccount, GoalContribution, InvestmentSummary, MonthlyGoal, MonthlyGoalSummary, Recurrence, Transaction, AccountMember, AccountMembers, IncomingAccountInvite } from '~/types'
+import type { CashflowProjection, Category, CreditCard, CreditCardInvoice, CreditCardRequest, DashboardPending, DashboardSummary, FinancePreferences, FinancialAccount, GoalContribution, InvestmentSummary, InvoicePaymentRequest, MonthlyGoal, MonthlyGoalSummary, Recurrence, Transaction, AccountMember, AccountMembers, IncomingAccountInvite, TransferRequest, TransferResponse, TransferUpdateRequest } from '~/types'
 import type { DefaultResponse, Page } from '~/utils/types'
 import { getTokenCookie } from '~/utils/util'
 import { apiFetch } from '~/utils/apiFetch'
@@ -30,6 +30,7 @@ export interface CreateTransactionRequest {
   executionDate: string
   accountId: string
   status?: 'OK' | 'PENDING'
+  creditCardId?: string | null
 }
 
 export interface UpdateTransactionRequest {
@@ -38,6 +39,20 @@ export interface UpdateTransactionRequest {
   executionDate?: string
   categoryID?: string
   income?: boolean
+  creditCardId?: string | null
+  clearCreditCard?: boolean
+}
+
+/**
+ * Campos de cartão dos lançamentos/recorrências. `creditCardId` vazio/ausente
+ * com `clear` verdadeiro envia `clearCreditCard` para desvincular.
+ */
+function creditCardFields(creditCardId?: string | null, currentCreditCardId?: string | null) {
+  const next = creditCardId || null
+  const current = currentCreditCardId || null
+  if (!next && current) return { clearCreditCard: true }
+  if (current && next === current) return {}
+  return { creditCardId: next ?? undefined }
 }
 
 export interface CreateAccountRequest {
@@ -134,6 +149,17 @@ export interface FinancesService {
   getAccountInvites(): Promise<DefaultResponse<IncomingAccountInvite[]>>
   acceptAccountInvite(token: string): Promise<DefaultResponse<void>>
   declineAccountInvite(token: string): Promise<DefaultResponse<void>>
+  getCards(accountId?: string): Promise<DefaultResponse<CreditCard[]>>
+  getCard(id: string): Promise<DefaultResponse<CreditCard>>
+  createCard(card: CreditCardRequest): Promise<DefaultResponse<CreditCard>>
+  updateCard(id: string, card: CreditCardRequest): Promise<DefaultResponse<CreditCard>>
+  deleteCard(id: string): Promise<DefaultResponse<void>>
+  getCardInvoices(id: string): Promise<DefaultResponse<CreditCardInvoice[]>>
+  payInvoice(id: string, invoiceMonth: string, payment: InvoicePaymentRequest): Promise<DefaultResponse<CreditCardInvoice>>
+  deleteInvoicePayment(id: string, invoiceMonth: string, paymentId: string): Promise<DefaultResponse<CreditCardInvoice>>
+  createTransfer(transfer: TransferRequest): Promise<DefaultResponse<TransferResponse>>
+  updateTransfer(transferId: string, transfer: TransferUpdateRequest): Promise<DefaultResponse<TransferResponse>>
+  deleteTransfer(transferId: string): Promise<DefaultResponse<void>>
 }
 
 export default function financesService({ apiUrl }: FinancesServiceOptions): FinancesService {
@@ -173,7 +199,7 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
         day: recurrence.day, income: recurrence.income, categoryID: recurrence.categoryID,
         type: recurrence.type, installments: recurrence.installments, payed: recurrence.payed,
         value: recurrence.value, title: recurrence.title, accountId: recurrence.accountId,
-        status: recurrence.status
+        status: recurrence.status, creditCardId: recurrence.creditCardId || undefined
       }
     }),
     deleteRecurrence: id => apiFetch(`${baseUrl}recurrences/${id}`, {
@@ -188,7 +214,8 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
         payed: recurrence.payed,
         categoryID: recurrence.categoryID,
         income: recurrence.income,
-        status: recurrence.status
+        status: recurrence.status,
+        ...creditCardFields(recurrence.creditCardId, recurrence.currentCreditCardId)
       }
     }),
     confirmRecurrence: (id, value) => apiFetch(`${baseUrl}recurrences/${id}/confirm`, {
@@ -209,7 +236,10 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
         value: transaction.value,
         executionDate: transaction.executionDate,
         categoryID: transaction.categoryID,
-        income: transaction.income
+        income: transaction.income,
+        ...(transaction.creditCardId
+          ? { creditCardId: transaction.creditCardId }
+          : transaction.clearCreditCard ? { clearCreditCard: true } : {})
       }
     }),
     createTransaction: transaction => apiFetch(`${baseUrl}transactions`, {
@@ -217,7 +247,7 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
         income: transaction.income, value: transaction.value, categoryID: transaction.categoryID,
         title: transaction.title, recurrencyID: transaction.recurrencyID,
         executionDate: transaction.executionDate, accountId: transaction.accountId,
-        status: transaction.status
+        status: transaction.status, creditCardId: transaction.creditCardId || undefined
       }
     }),
     previewStatementImport: request => apiFetch(`${baseUrl}transactions/import/preview`, {
@@ -282,6 +312,57 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
     }),
     declineAccountInvite: token => apiFetch(`${baseUrl}account-invites/decline`, {
       headers: authHeaders(), method: 'POST', body: { token }
+    }),
+    getCards: accountId => apiFetch(`${baseUrl}cards`, {
+      headers: authHeaders(), query: { accountId }
+    }),
+    getCard: id => apiFetch(`${baseUrl}cards/${id}`, { headers: authHeaders() }),
+    createCard: card => apiFetch(`${baseUrl}cards`, {
+      headers: authHeaders(), method: 'POST', body: {
+        accountId: card.accountId,
+        name: card.name,
+        cardLimit: card.cardLimit ?? null,
+        closingDay: card.closingDay,
+        dueDay: card.dueDay,
+        initialBalance: card.initialBalance ?? null
+      }
+    }),
+    updateCard: (id, card) => apiFetch(`${baseUrl}cards/${id}`, {
+      headers: authHeaders(), method: 'PUT', body: {
+        name: card.name,
+        cardLimit: card.cardLimit ?? null,
+        closingDay: card.closingDay,
+        dueDay: card.dueDay
+      }
+    }),
+    deleteCard: id => apiFetch(`${baseUrl}cards/${id}`, {
+      headers: authHeaders(), method: 'DELETE'
+    }),
+    getCardInvoices: id => apiFetch(`${baseUrl}cards/${id}/invoices`, { headers: authHeaders() }),
+    payInvoice: (id, invoiceMonth, payment) => apiFetch(`${baseUrl}cards/${id}/invoices/${invoiceMonth}/payments`, {
+      headers: authHeaders(), method: 'POST', body: { value: payment.value, date: payment.date }
+    }),
+    deleteInvoicePayment: (id, invoiceMonth, paymentId) => apiFetch(`${baseUrl}cards/${id}/invoices/${invoiceMonth}/payments/${paymentId}`, {
+      headers: authHeaders(), method: 'DELETE'
+    }),
+    createTransfer: transfer => apiFetch(`${baseUrl}transfers`, {
+      headers: authHeaders(), method: 'POST', body: {
+        fromAccountId: transfer.fromAccountId,
+        toAccountId: transfer.toAccountId,
+        value: transfer.value,
+        date: transfer.date,
+        title: transfer.title || undefined
+      }
+    }),
+    updateTransfer: (transferId, transfer) => apiFetch(`${baseUrl}transfers/${transferId}`, {
+      headers: authHeaders(), method: 'PUT', body: {
+        value: transfer.value,
+        date: transfer.date,
+        title: transfer.title || undefined
+      }
+    }),
+    deleteTransfer: transferId => apiFetch(`${baseUrl}transfers/${transferId}`, {
+      headers: authHeaders(), method: 'DELETE'
     })
   }
 }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.ManageAccounts
@@ -64,6 +65,8 @@ import com.ehs.finances.data.model.FinancialAccount
 import com.ehs.finances.di.AppContainer
 import com.ehs.finances.di.LocalContainer
 import com.ehs.finances.feature.auth.AuthScreen
+import com.ehs.finances.feature.cards.CardInvoiceScreen
+import com.ehs.finances.feature.cards.CardsScreen
 import com.ehs.finances.feature.categories.CategoriesScreen
 import com.ehs.finances.feature.dashboard.DashboardScreen
 import com.ehs.finances.feature.goals.GoalsScreen
@@ -71,6 +74,7 @@ import com.ehs.finances.feature.profile.ProfileScreen
 import com.ehs.finances.feature.recurrences.RecurrencesScreen
 import com.ehs.finances.feature.transactions.StatementImportScreen
 import com.ehs.finances.feature.transactions.TransactionsScreen
+import com.ehs.finances.feature.transfers.TransfersScreen
 
 private object Routes {
     const val DASHBOARD = "dashboard"
@@ -80,6 +84,11 @@ private object Routes {
     const val GOALS = "goals"
     const val PROFILE = "profile"
     const val IMPORT = "import/{review}"
+    const val CARDS = "cards"
+    const val INVOICES = "cards/{cardId}/invoices"
+    const val TRANSFERS = "transfers"
+
+    fun invoices(cardId: String) = "cards/$cardId/invoices"
 }
 
 private data class Tab(
@@ -158,6 +167,8 @@ private fun AuthenticatedApp(container: AppContainer) {
                         profileName = session?.user?.name,
                         onSelectAccount = container.financeState::setActiveAccount,
                         onOpenProfile = { navController.navigateOnce(Routes.PROFILE) },
+                        onOpenCards = { navController.navigateOnce(Routes.CARDS) },
+                        onOpenTransfers = { navController.navigateOnce(Routes.TRANSFERS) },
                     )
                 }
             },
@@ -192,6 +203,7 @@ private fun AuthenticatedApp(container: AppContainer) {
                 composable(Routes.DASHBOARD) {
                     DashboardScreen(
                         onOpenProfile = { navController.navigateOnce(Routes.PROFILE) },
+                        onOpenCards = { navController.navigateOnce(Routes.CARDS) },
                     )
                 }
                 composable(Routes.TRANSACTIONS) {
@@ -199,7 +211,27 @@ private fun AuthenticatedApp(container: AppContainer) {
                         onOpenImport = { review ->
                             navController.navigate("import/$review")
                         },
+                        onOpenTransfers = { navController.navigateOnce(Routes.TRANSFERS) },
+                        onOpenInvoices = { navController.navigateOnce(Routes.CARDS) },
                     )
+                }
+                composable(Routes.CARDS) {
+                    CardsScreen(
+                        onBack = { navController.popBackStack() },
+                        onOpenInvoices = { cardId -> navController.navigate(Routes.invoices(cardId)) },
+                    )
+                }
+                composable(
+                    route = Routes.INVOICES,
+                    arguments = listOf(navArgument("cardId") { type = NavType.StringType }),
+                ) { entry ->
+                    CardInvoiceScreen(
+                        cardId = entry.arguments?.getString("cardId").orEmpty(),
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                composable(Routes.TRANSFERS) {
+                    TransfersScreen(onBack = { navController.popBackStack() })
                 }
                 composable(Routes.CATEGORIES) { CategoriesScreen() }
                 composable(Routes.RECURRENCES) { RecurrencesScreen() }
@@ -228,6 +260,8 @@ private fun AppTopBar(
     profileName: String?,
     onSelectAccount: (String) -> Unit,
     onOpenProfile: () -> Unit,
+    onOpenCards: () -> Unit,
+    onOpenTransfers: () -> Unit,
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
@@ -246,6 +280,8 @@ private fun AppTopBar(
                     activeAccountId = activeAccountId,
                     onSelect = onSelectAccount,
                     onManage = onOpenProfile,
+                    onOpenCards = onOpenCards,
+                    onOpenTransfers = onOpenTransfers,
                     modifier = Modifier.weight(1f),
                 )
                 SettingsActions(profileName = profileName, onProfile = onOpenProfile)
@@ -261,6 +297,8 @@ private fun AccountMenu(
     activeAccountId: String?,
     onSelect: (String) -> Unit,
     onManage: () -> Unit,
+    onOpenCards: () -> Unit,
+    onOpenTransfers: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val strings = LocalStrings.current
@@ -310,6 +348,22 @@ private fun AccountMenu(
                 )
             }
             if (accounts.isNotEmpty()) HorizontalDivider()
+            DropdownMenuItem(
+                text = { Text(strings["manageCards"]) },
+                leadingIcon = { Icon(Icons.Filled.CreditCard, contentDescription = null) },
+                onClick = {
+                    expanded = false
+                    onOpenCards()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(strings["transfers"]) },
+                leadingIcon = { Icon(Icons.Filled.SwapHoriz, contentDescription = null) },
+                onClick = {
+                    expanded = false
+                    onOpenTransfers()
+                },
+            )
             DropdownMenuItem(
                 text = { Text(strings["manageAccounts"]) },
                 leadingIcon = { Icon(Icons.Filled.ManageAccounts, contentDescription = null) },

@@ -16,6 +16,8 @@ data class TransactionInput(
     val income: Boolean,
     val categoryId: String?,
     val executionDate: LocalDate,
+    /** `null` = compra de caixa ("conta/caixa"); preenchido = compra no cartão. */
+    val creditCardId: String? = null,
 )
 
 data class RecurrenceInput(
@@ -27,6 +29,22 @@ data class RecurrenceInput(
     val day: Int,
     val installments: Int?,
     val payed: Int?,
+    val creditCardId: String? = null,
+)
+
+data class CreditCardInput(
+    val name: String,
+    val cardLimit: Double?,
+    val closingDay: Int,
+    val dueDay: Int,
+)
+
+data class TransferInput(
+    val fromAccountId: String,
+    val toAccountId: String,
+    val value: Double,
+    val date: LocalDate,
+    val title: String?,
 )
 
 data class MonthlyGoalInput(

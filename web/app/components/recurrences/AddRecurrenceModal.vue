@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
-import type { Category, Recurrence } from '~/types'
+import type { Category, CreditCard, Recurrence } from '~/types'
 
 const props = defineProps({
   refresh: { type: Function, required: true },
   categories: { type: Array as PropType<Category[]>, required: true },
-  recurrency: { type: Object as () => Recurrence | null, default: null }
+  recurrency: { type: Object as () => Recurrence | null, default: null },
+  cards: { type: Array as PropType<CreditCard[]>, default: () => [] }
 })
 const { activeAccount } = useFinancialAccounts()
 const categoryLabel = useCategoryLabel()
@@ -22,7 +23,8 @@ const schema = z.object({
   categoryID: z.string().optional(),
   type: z.enum(['MONTH', 'INSTALLMENT']),
   installments: z.coerce.number().optional(),
-  payed: z.coerce.number().optional()
+  payed: z.coerce.number().optional(),
+  creditCardId: z.string().optional()
 })
   .superRefine((data, ctx) => {
     if (data.type === 'INSTALLMENT') {
@@ -58,8 +60,25 @@ const state = reactive<Partial<Schema>>({
   categoryID: undefined,
   type: 'MONTH',
   installments: undefined,
-  payed: undefined
+  payed: undefined,
+  creditCardId: undefined
 })
+
+const CASH = '__cash__'
+const cardOptions = computed(() => [
+  { label: $t('cashPayment'), value: CASH },
+  ...props.cards.map(card => ({ label: card.name, value: card.id }))
+])
+
+const cardSelectValue = computed({
+  get: () => state.creditCardId || CASH,
+  set: (value: string) => {
+    state.creditCardId = value === CASH ? undefined : value
+    if (state.creditCardId) state.income = false
+  }
+})
+
+const originalCardId = ref<string | null>(null)
 
 const categoryOptions = computed(() => props.categories
   .filter(category => category.income === state.income)
@@ -94,8 +113,10 @@ function applyRecurrence(c: Recurrence) {
     categoryID: c.categoryID,
     type: c.type,
     installments: c.installments ?? undefined,
-    payed: c.payed ?? undefined
+    payed: c.payed ?? undefined,
+    creditCardId: c.creditCardId || undefined
   })
+  originalCardId.value = c.creditCardId || null
 }
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
@@ -108,25 +129,35 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   const payload: Recurrence = {
     ...event.data,
     accountId: activeAccount.value?.id,
-    status: props.recurrency?.status
+    status: props.recurrency?.status,
+    creditCardId: event.data.creditCardId || (originalCardId.value ? null : undefined),
+    currentCreditCardId: originalCardId.value
   }
 
-  if (event.data.id) {
-    await $financesService.editRecurrence(event.data.id, payload)
+  try {
+    if (event.data.id) {
+      await $financesService.editRecurrence(event.data.id, payload)
+      toast.add({
+        title: $t('update'),
+        description: $t('recurrenceUpdatedDesc', { title: event.data.title }),
+        color: 'success'
+      })
+    } else {
+      if (!activeAccount.value) return
+      payload.status = 'ACTIVE'
+      await $financesService.createRecurrence(payload)
+      toast.add({
+        title: $t('success'),
+        description: $t('recurrenceCreatedDesc', { title: event.data.title }),
+        color: 'success'
+      })
+    }
+  } catch {
     toast.add({
-      title: 'Success',
-      description: `Recurrence ${event.data.title} updated`,
-      color: 'success'
+      title: event.data.id ? $t('recurrenceSaveFailed') : $t('recurrenceCreateFailed'),
+      color: 'error'
     })
-  } else {
-    if (!activeAccount.value) return
-    payload.status = 'ACTIVE'
-    await $financesService.createRecurrence(payload)
-    toast.add({
-      title: 'Success',
-      description: `New recurrence ${event.data.title} added`,
-      color: 'success'
-    })
+    return
   }
 
   closeModal()
@@ -143,8 +174,10 @@ function resetState() {
     categoryID: undefined,
     type: 'MONTH',
     installments: undefined,
-    payed: undefined
+    payed: undefined,
+    creditCardId: undefined
   })
+  originalCardId.value = null
 }
 
 function openModal() {
@@ -230,9 +263,25 @@ defineExpose({ openModal, closeModal })
           name="income"
         >
           <div class="flex items-center gap-3">
-            <USwitch v-model="state.income" />
+            <USwitch
+              v-model="state.income"
+              :disabled="!!state.creditCardId"
+            />
             <span class="text-sm text-muted">{{ state.income ? $t('income') : $t('expanse') }}</span>
           </div>
+        </UFormField>
+
+        <UFormField
+          :label="$t('paymentMethod')"
+          name="creditCardId"
+          :help="$t('recurrenceCardHelp')"
+        >
+          <USelect
+            v-model="cardSelectValue"
+            :items="cardOptions"
+            class="w-full"
+            :disabled="state.income"
+          />
         </UFormField>
 
         <UFormField

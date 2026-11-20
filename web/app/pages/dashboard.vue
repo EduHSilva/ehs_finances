@@ -59,6 +59,11 @@ const numberLocale = computed(() => locale.value === 'pt' ? 'pt-BR' : 'en-US')
 const monthLabel = computed(() => new Intl.DateTimeFormat(numberLocale.value, { month: 'long', year: 'numeric' }).format(new Date()))
 const reserveMonths = computed(() => summary.value?.livingCost.reserve?.months ?? null)
 const hasLivingCost = computed(() => summary.value?.livingCost.monthlyAverage != null)
+const openInvoices = computed(() => summary.value?.cards ?? { openInvoicesTotal: 0, cards: [] })
+const canConfirmPending = (item: PendingItem) =>
+  item.kind === 'TRANSACTION' || item.kind === 'RECURRENCE'
+const pendingStatusLabel = (item: PendingItem) =>
+  t(`${item.kind === 'INVOICE' ? 'invoiceStatus' : 'transactionStatus'}.${item.status.toLowerCase()}`)
 const reserveMonthsLabel = computed(() => {
   if (reserveMonths.value == null) return '—'
   const formatted = new Intl.NumberFormat(numberLocale.value, { maximumFractionDigits: 1 }).format(reserveMonths.value)
@@ -108,6 +113,7 @@ async function refreshProjection() {
 }
 
 async function confirmPending(item: PendingItem) {
+  if (!canConfirmPending(item)) return
   try {
     if (item.kind === 'TRANSACTION') await $financesService.confirmTransaction(item.id)
     else await $financesService.confirmRecurrence(item.id)
@@ -196,6 +202,15 @@ onMounted(async () => {
                   {{ formatCurrency(summary?.netWorth.projected ?? projection.closingBalance) }}
                 </p>
               </div>
+            </div>
+            <div
+              v-if="openInvoices.openInvoicesTotal > 0"
+              class="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-default pt-4 text-sm"
+            >
+              <span class="text-muted">{{ $t('openInvoicesDeducted') }}</span>
+              <span class="font-medium tabular-nums text-error">
+                -{{ formatCurrency(openInvoices.openInvoicesTotal) }}
+              </span>
             </div>
           </UPageCard>
 
@@ -356,6 +371,56 @@ onMounted(async () => {
             </UPageCard>
           </div>
 
+          <UPageCard
+            variant="subtle"
+            :title="$t('openInvoices')"
+            :description="$t('openInvoicesHelp')"
+          >
+            <div class="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p class="text-2xl font-semibold tabular-nums">
+                  {{ formatCurrency(openInvoices.openInvoicesTotal) }}
+                </p>
+                <p class="mt-1 text-xs text-muted">
+                  {{ $t('openInvoicesDeducted') }}
+                </p>
+              </div>
+              <UButton
+                v-if="openInvoices.cards.length"
+                :label="$t('manageCards')"
+                icon="i-lucide-credit-card"
+                color="neutral"
+                variant="outline"
+                to="/cards"
+              />
+            </div>
+            <ul
+              v-if="openInvoices.cards.length"
+              class="mt-4 divide-y divide-default border-t border-default"
+            >
+              <li
+                v-for="card in openInvoices.cards"
+                :key="card.cardId"
+                class="flex items-center justify-between gap-4 py-2 text-sm"
+              >
+                <span class="flex min-w-0 items-center gap-2">
+                  <UIcon
+                    name="i-lucide-credit-card"
+                    class="shrink-0 text-muted"
+                  />
+                  <span class="truncate">{{ card.name }}</span>
+                </span>
+                <span class="shrink-0 font-medium tabular-nums">{{ formatCurrency(card.total) }}</span>
+              </li>
+            </ul>
+            <p
+              v-else
+              class="mt-4 border-t border-default pt-4 text-sm text-muted"
+            >
+              {{ $t('noOpenInvoices') }}
+            </p>
+          </UPageCard>
+
           <div class="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
             <UPageCard
               variant="subtle"
@@ -451,7 +516,9 @@ onMounted(async () => {
                     {{ item.title }}
                   </p>
                   <p class="text-sm text-muted">
-                    {{ formatDate(item.date) }} · {{ $t(`pendingKind.${item.kind.toLowerCase()}`) }} · {{ $t(`transactionStatus.${item.status.toLowerCase()}`) }}
+                    {{ formatDate(item.date) }} · {{ $t(`pendingKind.${item.kind.toLowerCase()}`) }} · {{ pendingStatusLabel(item) }}
+                    <span v-if="item.cardName"> · {{ item.cardName }}</span>
+                    <span v-if="item.invoiceMonth"> · {{ item.invoiceMonth }}</span>
                   </p>
                 </div>
                 <div class="flex items-center gap-3">
@@ -459,10 +526,20 @@ onMounted(async () => {
                     {{ item.income ? '+' : '-' }}{{ formatCurrency(item.amount) }}
                   </span>
                   <UButton
+                    v-if="canConfirmPending(item)"
                     size="xs"
                     icon="i-lucide-check"
                     :label="$t('confirm')"
                     @click="confirmPending(item)"
+                  />
+                  <UButton
+                    v-else-if="item.kind === 'INVOICE'"
+                    size="xs"
+                    color="neutral"
+                    variant="outline"
+                    icon="i-lucide-credit-card"
+                    :label="$t('viewInvoices')"
+                    to="/cards"
                   />
                 </div>
               </div>

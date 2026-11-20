@@ -3,11 +3,13 @@ import type { TableColumn } from '@nuxt/ui'
 import { upperFirst } from 'scule'
 import type { Row } from '@tanstack/table-core'
 import { getPaginationRowModel } from '@tanstack/table-core'
-import type { Category, Transaction } from '~/types'
+import type { Category, CreditCard, Transaction } from '~/types'
 import DashLayout from '~/layouts/DashLayout.vue'
 import CustomHeader from '~/components/CustomHeader.vue'
 import AddTransactionModal from '~/components/transactions/AddTransactionModal.vue'
 import ImportStatementModal from '~/components/transactions/ImportStatementModal.vue'
+import TransferModal from '~/components/transactions/TransferModal.vue'
+import DeleteConfirmModal from '~/components/DeleteConfirmModal.vue'
 import ConfirmValueModal from '~/components/ConfirmValueModal.vue'
 
 const UButton = resolveComponent('UButton')
@@ -24,7 +26,8 @@ const columnFilters = ref([{
 const rowSelection = ref({ 1: true })
 
 const { $financesService } = useNuxtApp()
-const { activeAccount, loadAccounts } = useFinancialAccounts()
+const { activeAccount, loadAccounts, visibleAccounts } = useFinancialAccounts()
+const { cards: creditCards, loadCards } = useCreditCards()
 const categoryLabel = useCategoryLabel()
 const { t, locale } = useI18n()
 const toast = useToast()
@@ -32,8 +35,16 @@ const toast = useToast()
 const data = ref<Transaction[]>([])
 
 async function confirmDelete(transaction: Transaction) {
-  await $financesService.deleteTransaction(transaction.id)
-  await refresh()
+  try {
+    if (transaction.entryType === 'TRANSFER' && transaction.transferId) {
+      await $financesService.deleteTransfer(transaction.transferId)
+    } else {
+      await $financesService.deleteTransaction(transaction.id)
+    }
+    await refresh()
+  } catch {
+    toast.add({ title: t('transactionDeleteFailed'), color: 'error' })
+  }
 }
 
 const confirmModalRef = ref<InstanceType<typeof ConfirmValueModal> | null>(null)
@@ -52,6 +63,8 @@ function askConfirm(transaction: Transaction) {
 
 const modalRef = ref<InstanceType<typeof AddTransactionModal> | null>(null)
 const importModalRef = ref<InstanceType<typeof ImportStatementModal> | null>(null)
+const transferModalRef = ref<InstanceType<typeof TransferModal> | null>(null)
+const deleteModalRef = ref<InstanceType<typeof DeleteConfirmModal> | null>(null)
 
 const selectedTransaction = ref<Transaction | null>(null)
 const reviewCount = computed(() => data.value.filter(transaction => transaction.status === 'REVIEW').length)
@@ -61,6 +74,17 @@ function openModal() {
 }
 
 const categories = ref<Category[]>([])
+const cards = computed<CreditCard[]>(() => creditCards.value)
+
+/** Lançamentos gerados por transferência/fatura não usam o CRUD comum. */
+function isDerivedEntry(transaction: Transaction) {
+  return transaction.entryType === 'TRANSFER' || transaction.entryType === 'INVOICE_PAYMENT'
+}
+
+function accountName(accountId?: string | null) {
+  if (!accountId) return undefined
+  return visibleAccounts.value.find(account => account.id === accountId)?.name
+}
 
 function openEditModal(transaction: Transaction) {
   const matchingCategory = categories.value.find(category => category.title === transaction.category)
@@ -78,6 +102,7 @@ async function refresh() {
     data.value = []
     return
   }
+  if (!cards.value.length) loadCards(activeAccount.value.id)
   if (!categories.value.length) {
     const categoryResponse = await $financesService.getCategories()
     categories.value = categoryResponse.data.items
@@ -106,25 +131,54 @@ async function refresh() {
   data.value = all
 }
 
-watch(() => activeAccount.value?.id, () => refresh(), { immediate: true })
+watch(() => activeAccount.value?.id, () => {
+  loadCards()
+  refresh()
+}, { immediate: true })
 onMounted(() => loadAccounts().then(refresh))
 
 function getRowItems(row: Row<Transaction>) {
+  const transaction = row.original
+  if (isDerivedEntry(transaction)) {
+    return [
+      {
+        type: 'label',
+        label: $t('actions')
+      },
+      ...(transaction.entryType === 'TRANSFER'
+        ? [{
+            label: $t('editTransfer'),
+            icon: 'i-lucide-arrow-left-right',
+            onSelect() {
+              openTransferEdit(transaction)
+            }
+          }]
+        : []),
+      {
+        label: transaction.entryType === 'TRANSFER' ? $t('deleteTransfer') : $t('delete'),
+        icon: 'i-lucide-trash',
+        color: 'error',
+        onSelect() {
+          askDelete(transaction)
+        }
+      }
+    ]
+  }
   return [
     {
       type: 'label',
       label: $t('actions')
     },
-    ...(row.original.status === 'PENDING'
+    ...(transaction.status === 'PENDING'
       ? [{
           label: $t('confirm'),
           icon: 'i-lucide-check',
           onSelect() {
-            askConfirm(row.original)
+            askConfirm(transaction)
           }
         }]
       : []),
-    ...(row.original.status === 'REVIEW'
+    ...(transaction.status === 'REVIEW'
       ? [{
           label: $t('reviewImport'),
           icon: 'i-lucide-search-check',
@@ -137,7 +191,7 @@ function getRowItems(row: Row<Transaction>) {
       label: $t('edit'),
       icon: 'i-lucide-edit',
       onSelect() {
-        openEditModal(row.original)
+        openEditModal(transaction)
       }
     },
     {
@@ -145,10 +199,48 @@ function getRowItems(row: Row<Transaction>) {
       icon: 'i-lucide-trash',
       color: 'error',
       onSelect() {
-        confirmDelete(row.original)
+        askDelete(transaction)
       }
     }
   ]
+}
+
+function askDelete(transaction: Transaction) {
+  const label = transaction.entryType === 'TRANSFER'
+    ? $t('deleteTransferTitle')
+    : transaction.entryType === 'INVOICE_PAYMENT'
+      ? $t('deleteInvoicePaymentTitle')
+      : $t('deleteTransactionTitle')
+  const description = transaction.entryType === 'TRANSFER'
+    ? $t('deleteTransferDesc')
+    : transaction.entryType === 'INVOICE_PAYMENT'
+      ? $t('deleteInvoicePaymentFromListDesc')
+      : $t('deleteTransactionDesc', { title: transaction.title })
+  deleteModalRef.value?.openModal({
+    title: label,
+    description,
+    submitLabel: $t('delete'),
+    onConfirm: () => confirmDelete(transaction)
+  })
+}
+
+function openTransferEdit(transaction: Transaction) {
+  if (!transaction.transferId) return
+  const outgoing = transaction.income === false
+  const fromAccountId = outgoing
+    ? (transaction.accountId || activeAccount.value?.id || '')
+    : (transaction.counterpartAccountId || '')
+  const toAccountId = outgoing
+    ? (transaction.counterpartAccountId || '')
+    : (transaction.accountId || activeAccount.value?.id || '')
+  transferModalRef.value?.openModal({
+    transferId: transaction.transferId,
+    fromAccountId,
+    toAccountId,
+    value: transaction.value,
+    date: transaction.executionDate,
+    title: transaction.title
+  })
 }
 
 const columnVisibility = ref({
@@ -193,12 +285,54 @@ const columns = computed<TableColumn<Transaction>[]>(() => [
   {
     accessorKey: 'category',
     header: $t('category'),
-    cell: ({ row }) => categoryLabel(row.original.category, row.original.categoryKey)
+    cell: ({ row }) => {
+      if (isDerivedEntry(row.original)) {
+        return h('span', { class: 'text-muted' }, $t('noCategory'))
+      }
+      return categoryLabel(row.original.category, row.original.categoryKey)
+    }
+  },
+  {
+    accessorKey: 'entryType',
+    header: $t('movementKind'),
+    cell: ({ row }) => {
+      const transaction = row.original
+      const entryType = transaction.entryType || 'NORMAL'
+      const badges = []
+      if (entryType !== 'NORMAL') {
+        const color = {
+          CARD: 'primary' as const,
+          TRANSFER: 'info' as const,
+          INVOICE_PAYMENT: 'neutral' as const
+        }[entryType]
+        const icon = {
+          CARD: 'i-lucide-credit-card',
+          TRANSFER: 'i-lucide-arrow-left-right',
+          INVOICE_PAYMENT: 'i-lucide-receipt-text'
+        }[entryType]
+        const label = entryType === 'CARD' && transaction.creditCardName
+          ? transaction.creditCardName
+          : $t(`entryType.${entryType.toLowerCase()}`)
+        badges.push(h(UBadge, { variant: 'subtle', color, icon, class: 'whitespace-nowrap' }, () => label))
+      }
+      if (entryType === 'TRANSFER' && transaction.counterpartAccountId) {
+        badges.push(h('span', { class: 'text-xs text-muted whitespace-nowrap' }, transaction.counterpartAccountName
+        || accountName(transaction.counterpartAccountId)
+        || transaction.counterpartAccountId))
+      }
+      if (entryType === 'INVOICE_PAYMENT' && transaction.invoiceDueDate) {
+        badges.push(h('span', { class: 'text-xs text-muted whitespace-nowrap' }, formatDate(transaction.invoiceDueDate)))
+      }
+      if (!badges.length) return h('span', { class: 'text-muted' }, $t('entryType.normal'))
+      return h('div', { class: 'flex flex-wrap items-center gap-1.5' }, badges)
+    }
   },
   {
     accessorKey: 'classification',
     header: $t('classification'),
-    cell: ({ row }) => row.original.classification ? $t(row.original.classification.toLowerCase()) : ''
+    cell: ({ row }) => row.original.classification && !isDerivedEntry(row.original)
+      ? $t(row.original.classification.toLowerCase())
+      : ''
   },
   {
     accessorKey: 'value',
@@ -308,7 +442,19 @@ const pagination = ref({
     <UDashboardPanel id="transactions">
       <template #header>
         <CustomHeader>
-          <div v-if="activeAccount" class="flex flex-wrap items-center gap-2">
+          <div
+            v-if="activeAccount"
+            class="flex flex-wrap items-center gap-2"
+          >
+            <UButton
+              :label="$t('newTransfer')"
+              icon="i-lucide-arrow-left-right"
+              color="neutral"
+              variant="outline"
+              :disabled="visibleAccounts.length < 2"
+              :title="visibleAccounts.length < 2 ? $t('transferNeedsTwoAccounts') : undefined"
+              @click="transferModalRef?.openModal()"
+            />
             <UButton
               :label="$t('importStatement')"
               icon="i-lucide-upload"
@@ -337,9 +483,15 @@ const pagination = ref({
         <AddTransactionModal
           ref="modalRef"
           :categories="categories"
+          :cards="cards"
           :refresh="refresh"
           :transaction="selectedTransaction"
         />
+        <TransferModal
+          ref="transferModalRef"
+          :refresh="refresh"
+        />
+        <DeleteConfirmModal ref="deleteModalRef" />
         <ImportStatementModal
           ref="importModalRef"
           :categories="categories"

@@ -3,6 +3,10 @@ export type RecurrenceStatus = 'ACTIVE' | 'PENDING' | 'INACTIVE' | 'PAYED' | 'DE
 export type SaleStatus = 'paid' | 'failed' | 'refunded'
 export type FinancialAccountType = 'PF' | 'PJ'
 export type FinancialAccountRole = 'OWNER' | 'MEMBER'
+export type TransactionEntryType = 'NORMAL' | 'CARD' | 'TRANSFER' | 'INVOICE_PAYMENT'
+export type CreditCardStatus = 'ACTIVE' | 'INACTIVE' | 'DELETED'
+export type CreditCardInvoiceStatus = 'OPEN' | 'PARTIAL' | 'PAID'
+export type TransferStatus = 'OK' | 'PENDING' | 'DELETED'
 
 export interface FinancialAccount {
   id: string
@@ -137,6 +141,85 @@ export interface Transaction {
   recurrence?: string
   accountId?: string
   classification?: string
+  entryType?: TransactionEntryType
+  creditCardId?: string | null
+  creditCardName?: string | null
+  transferId?: string | null
+  counterpartAccountId?: string | null
+  counterpartAccountName?: string | null
+  invoiceDueDate?: string | null
+}
+
+export interface CreditCard {
+  id: string
+  accountId: string
+  name: string
+  cardLimit?: number | null
+  closingDay: number
+  dueDay: number
+  status: CreditCardStatus
+  openInvoiceTotal: number
+}
+
+export interface CreditCardRequest {
+  accountId?: string
+  name: string
+  cardLimit?: number | null
+  closingDay: number
+  dueDay: number
+  /** Só na criação: vira uma compra CARD confirmada na fatura em aberto. */
+  initialBalance?: number | null
+}
+
+export interface CreditCardInvoice {
+  cardId: string
+  invoiceMonth: string
+  closingDate: string
+  dueDate: string
+  total: number
+  paid: number
+  remaining: number
+  status: CreditCardInvoiceStatus
+  payments?: CreditCardInvoicePayment[]
+}
+
+export interface CreditCardInvoicePayment {
+  id: string
+  invoiceMonth?: string
+  value: number
+  date: string
+  transactionId?: string | null
+}
+
+export interface InvoicePaymentRequest {
+  value: number
+  date: string
+}
+
+export interface TransferRequest {
+  fromAccountId: string
+  toAccountId: string
+  value: number
+  date: string
+  title?: string
+}
+
+export interface TransferUpdateRequest {
+  value: number
+  date: string
+  title?: string
+}
+
+export interface TransferResponse {
+  transferId: string
+  fromAccountId: string
+  toAccountId: string
+  value: number
+  date: string
+  title?: string | null
+  status: TransferStatus
+  outTransactionId?: string | null
+  inTransactionId?: string | null
 }
 
 export interface Category {
@@ -163,6 +246,10 @@ export interface Recurrence {
   installments?: number
   payed?: number
   accountId?: string
+  creditCardId?: string | null
+  /** Cartão gravado no servidor, usado para montar `clearCreditCard` na edição. */
+  currentCreditCardId?: string | null
+  creditCardName?: string | null
 }
 
 export interface InvestmentSummary {
@@ -195,6 +282,14 @@ export interface DashboardSummary {
     current: number
     projected: number
   }
+  cards: {
+    openInvoicesTotal: number
+    cards: Array<{
+      cardId: string
+      name: string
+      total: number
+    }>
+  }
   livingCost: {
     monthlyAverage: number | null
     months: number
@@ -215,14 +310,19 @@ export interface DashboardSummary {
   }>
 }
 
+export type PendingItemKind = 'TRANSACTION' | 'RECURRENCE' | 'TRANSFER' | 'INVOICE'
+
 export interface PendingItem {
   id: string
-  kind: 'TRANSACTION' | 'RECURRENCE'
+  kind: PendingItemKind
   title: string
   amount: number
   income: boolean
   date: string
   status: TransactionStatus | RecurrenceStatus
+  cardId?: string | null
+  cardName?: string | null
+  invoiceMonth?: string | null
 }
 
 export interface DashboardPending {

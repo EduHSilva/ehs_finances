@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -77,6 +78,7 @@ import kotlin.math.roundToInt
 @Composable
 fun DashboardScreen(
     onOpenProfile: () -> Unit,
+    onOpenCards: () -> Unit = {},
 ) {
     val vm: DashboardViewModel = containerViewModel {
         DashboardViewModel(it.financeState, it.financesRepository)
@@ -165,6 +167,20 @@ fun DashboardScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    // Patrimônio atual já desconta as faturas abertas; detalhamos a composição.
+                    val openInvoices = summary?.cards?.openInvoicesTotal ?: 0.0
+                    if (openInvoices > 0.0) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            listOf(
+                                "${strings["cash"]} ${Money.format(cash?.currentBalance ?: 0.0, strings.locale)}",
+                                "${strings["investments"]} ${Money.format(investments?.total ?: 0.0, strings.locale)}",
+                                "− ${strings["openInvoices"]} ${Money.format(openInvoices, strings.locale)}",
+                            ).joinToString("  "),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     Spacer(Modifier.height(10.dp))
                     HorizontalDivider(color = FinancesTheme.colors.border)
                     Spacer(Modifier.height(10.dp))
@@ -184,6 +200,74 @@ fun DashboardScreen(
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary,
                         )
+                    }
+                }
+
+                ContentCard {
+                    SectionHeader(
+                        title = strings["openInvoices"],
+                        subtitle = strings["openInvoicesHelp"],
+                        action = if (state.hasCardPendings) {
+                            { LinkButton(strings["cards"], onClick = onOpenCards) }
+                        } else {
+                            null
+                        },
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    val cardsTotal = summary?.cards
+                    if (cardsTotal == null) {
+                        EmptyNote(strings["noOpenInvoices"])
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                strings["cardOpenInvoices"],
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                Money.format(cardsTotal.openInvoicesTotal, strings.locale),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (cardsTotal.openInvoicesTotal > 0.0) {
+                                    FinancesTheme.colors.danger
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                            )
+                        }
+                        if (cardsTotal.cards.isNotEmpty()) {
+                            Spacer(Modifier.height(8.dp))
+                            cardsTotal.cards.forEach { card ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Icon(
+                                        Icons.Filled.CreditCard,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                    Text(
+                                        card.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.weight(1f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        Money.format(card.total, strings.locale),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -356,6 +440,11 @@ fun DashboardScreen(
                     SectionHeader(
                         title = strings["pendingItems"],
                         subtitle = strings["pendingItemsHelp"],
+                        action = if (state.hasCardPendings) {
+                            { LinkButton(strings["cards"], onClick = onOpenCards) }
+                        } else {
+                            null
+                        },
                     )
                     Spacer(Modifier.height(8.dp))
                     val pendingItems = state.pending?.items.orEmpty()
@@ -374,8 +463,10 @@ fun DashboardScreen(
                                     Text(
                                         listOfNotNull(
                                             ApiDates.format(ApiDates.parse(item.date), strings.locale),
-                                            strings["pendingKind${item.kind.lowercase().replaceFirstChar { it.uppercase() }}"],
-                                            strings["transactionStatus${item.status.lowercase().replaceFirstChar { it.uppercase() }}"],
+                                            pendingKindLabel(item.kind, strings),
+                                            item.cardName,
+                                            item.invoiceMonth,
+                                            pendingStatusLabel(item, strings),
                                         ).joinToString(" · "),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -387,10 +478,17 @@ fun DashboardScreen(
                                     fontWeight = FontWeight.SemiBold,
                                     color = if (item.income) FinancesTheme.colors.success else FinancesTheme.colors.danger,
                                 )
-                                if (state.confirmingId == item.id) {
-                                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                                } else {
-                                    IconButton(onClick = { confirmTarget = item }) {
+                                when {
+                                    !item.canConfirm -> IconButton(onClick = onOpenCards) {
+                                        Icon(
+                                            Icons.Filled.CreditCard,
+                                            contentDescription = strings["pendingOpenInvoice"],
+                                            tint = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+                                    state.confirmingId == item.id ->
+                                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                                    else -> IconButton(onClick = { confirmTarget = item }) {
                                         Icon(
                                             Icons.Filled.Check,
                                             contentDescription = strings["confirm"],
@@ -714,6 +812,24 @@ private fun projectionKindLabel(kind: String, strings: com.ehs.finances.core.i18
     val key = "projectionKind${kind.lowercase().replaceFirstChar { it.uppercase() }}"
     val label = strings[key]
     return if (label == key) kind else label
+}
+
+/** `TRANSACTION`, `RECURRENCE`, `TRANSFER` e `INVOICE` (fatura aberta). */
+private fun pendingKindLabel(kind: String, strings: com.ehs.finances.core.i18n.Strings): String {
+    val key = "pendingKind${kind.lowercase().replaceFirstChar { it.uppercase() }}"
+    val label = strings[key]
+    return if (label == key) kind else label
+}
+
+/** Fatura/pendência sem status de lançamento não mostra a etiqueta crua. */
+private fun pendingStatusLabel(
+    item: PendingItem,
+    strings: com.ehs.finances.core.i18n.Strings,
+): String? {
+    if (item.isInvoice || item.isTransfer) return null
+    val key = "transactionStatus${item.status.lowercase().replaceFirstChar { it.uppercase() }}"
+    val label = strings[key]
+    return if (label == key || item.status.isBlank()) null else label
 }
 
 private fun installmentLabels(

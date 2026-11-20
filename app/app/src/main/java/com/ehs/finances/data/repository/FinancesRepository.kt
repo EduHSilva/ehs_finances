@@ -8,6 +8,9 @@ import com.ehs.finances.data.model.AccountMembers
 import com.ehs.finances.data.model.CashflowProjection
 import com.ehs.finances.data.model.Category
 import com.ehs.finances.data.model.CategoryInput
+import com.ehs.finances.data.model.CreditCard
+import com.ehs.finances.data.model.CreditCardInput
+import com.ehs.finances.data.model.CreditCardInvoice
 import com.ehs.finances.data.model.DashboardPending
 import com.ehs.finances.data.model.DashboardSummary
 import com.ehs.finances.data.model.FinancePreferences
@@ -27,23 +30,31 @@ import com.ehs.finances.data.model.StatementImportResult
 import com.ehs.finances.data.model.Transaction
 import com.ehs.finances.data.model.TransactionImportAudit
 import com.ehs.finances.data.model.TransactionInput
+import com.ehs.finances.data.model.Transfer
+import com.ehs.finances.data.model.TransferInput
 import com.ehs.finances.data.remote.AddCategoryRequest
 import com.ehs.finances.data.remote.AddRecurrenceRequest
 import com.ehs.finances.data.remote.AddTransactionRequest
 import com.ehs.finances.data.remote.ConfirmValueRequest
+import com.ehs.finances.data.remote.CreateCreditCardRequest
 import com.ehs.finances.data.remote.CreateFinanceAccountRequest
 import com.ehs.finances.data.remote.FinancesApi
 import com.ehs.finances.data.remote.GoalContributionRequest
 import com.ehs.finances.data.remote.InviteAccountMemberRequest
+import com.ehs.finances.data.remote.InvoicePaymentRequest
 import com.ehs.finances.data.remote.MonthlyGoalRequest
 import com.ehs.finances.data.remote.ReviewImportedTransactionRequest
 import com.ehs.finances.data.remote.StatementImportLineRequest
 import com.ehs.finances.data.remote.StatementImportRequest
+import com.ehs.finances.data.remote.TransferRequest
+import com.ehs.finances.data.remote.TransferUpdateRequest
 import com.ehs.finances.data.remote.UpdateCategoryRequest
+import com.ehs.finances.data.remote.UpdateCreditCardRequest
 import com.ehs.finances.data.remote.UpdateFinancePreferencesRequest
 import com.ehs.finances.data.remote.UpdateRecurrenceRequest
 import com.ehs.finances.data.remote.UpdateTransactionRequest
 import com.ehs.finances.domain.ApiDates
+import java.time.LocalDate
 
 /** Repositório único do microserviço `finances`, com os mesmos contratos usados pelo web. */
 class FinancesRepository(private val api: FinancesApi) {
@@ -145,6 +156,7 @@ class FinancesRepository(private val api: FinancesApi) {
                 executionDate = ApiDates.toApi(input.executionDate),
                 accountId = accountId,
                 status = status,
+                creditCardId = input.creditCardId?.takeIf { it.isNotBlank() },
             ),
         ).unwrap().toModel()
     }
@@ -152,7 +164,9 @@ class FinancesRepository(private val api: FinancesApi) {
     suspend fun updateTransaction(
         id: String,
         input: TransactionInput,
+        currentCreditCardId: String? = null,
     ): Transaction = apiCall {
+        val cardFields = creditCardFields(input.creditCardId, currentCreditCardId)
         api.updateTransaction(
             id,
             UpdateTransactionRequest(
@@ -161,6 +175,8 @@ class FinancesRepository(private val api: FinancesApi) {
                 executionDate = ApiDates.toApi(input.executionDate),
                 categoryID = input.categoryId,
                 income = input.income,
+                creditCardId = cardFields.first,
+                clearCreditCard = cardFields.second,
             ),
         ).unwrap().toModel()
     }
@@ -248,6 +264,7 @@ class FinancesRepository(private val api: FinancesApi) {
                 title = input.title.trim(),
                 accountId = accountId,
                 status = status,
+                creditCardId = input.creditCardId?.takeIf { it.isNotBlank() },
             ),
         ).unwrap().toModel()
     }
@@ -256,7 +273,9 @@ class FinancesRepository(private val api: FinancesApi) {
         id: String,
         input: RecurrenceInput,
         status: String,
+        currentCreditCardId: String? = null,
     ): Recurrence = apiCall {
+        val cardFields = creditCardFields(input.creditCardId, currentCreditCardId)
         api.updateRecurrence(
             id,
             UpdateRecurrenceRequest(
@@ -268,8 +287,119 @@ class FinancesRepository(private val api: FinancesApi) {
                 categoryID = input.categoryId,
                 income = input.income,
                 status = status,
+                creditCardId = cardFields.first,
+                clearCreditCard = cardFields.second,
             ),
         ).unwrap().toModel()
+    }
+
+    // ----- Cartões de crédito e faturas -------------------------------------
+
+    suspend fun cards(accountId: String): List<CreditCard> = apiCall {
+        api.cards(accountId).unwrap().map { it.toModel() }
+    }
+
+    suspend fun card(id: String): CreditCard = apiCall { api.card(id).unwrap().toModel() }
+
+    suspend fun createCard(accountId: String, input: CreditCardInput): CreditCard = apiCall {
+        api.createCard(
+            CreateCreditCardRequest(
+                accountId = accountId,
+                name = input.name.trim(),
+                cardLimit = input.cardLimit,
+                closingDay = input.closingDay,
+                dueDay = input.dueDay,
+            ),
+        ).unwrap().toModel()
+    }
+
+    suspend fun updateCard(id: String, input: CreditCardInput): CreditCard = apiCall {
+        api.updateCard(
+            id,
+            UpdateCreditCardRequest(
+                name = input.name.trim(),
+                cardLimit = input.cardLimit,
+                closingDay = input.closingDay,
+                dueDay = input.dueDay,
+            ),
+        ).unwrap().toModel()
+    }
+
+    suspend fun deleteCard(id: String) {
+        apiCall { api.deleteCard(id) }
+    }
+
+    suspend fun cardInvoices(cardId: String): List<CreditCardInvoice> = apiCall {
+        api.cardInvoices(cardId).unwrap().map { it.toModel() }
+    }
+
+    suspend fun payInvoice(
+        cardId: String,
+        invoiceMonth: String,
+        value: Double,
+        date: LocalDate,
+    ): CreditCardInvoice = apiCall {
+        api.payInvoice(
+            cardId,
+            invoiceMonth,
+            InvoicePaymentRequest(value = value, date = ApiDates.toApi(date)),
+        ).unwrap().toModel()
+    }
+
+    suspend fun deleteInvoicePayment(cardId: String, invoiceMonth: String, paymentId: String) {
+        apiCall { api.deleteInvoicePayment(cardId, invoiceMonth, paymentId) }
+    }
+
+    // ----- Transferências entre contas --------------------------------------
+
+    suspend fun createTransfer(input: TransferInput): Transfer = apiCall {
+        api.createTransfer(
+            TransferRequest(
+                fromAccountId = input.fromAccountId,
+                toAccountId = input.toAccountId,
+                value = input.value,
+                date = ApiDates.toApi(input.date),
+                title = input.title?.trim()?.takeIf { it.isNotBlank() },
+            ),
+        ).unwrap().toModel()
+    }
+
+    suspend fun updateTransfer(
+        transferId: String,
+        value: Double,
+        date: LocalDate,
+        title: String?,
+    ): Transfer = apiCall {
+        api.updateTransfer(
+            transferId,
+            TransferUpdateRequest(
+                value = value,
+                date = ApiDates.toApi(date),
+                title = title?.trim()?.takeIf { it.isNotBlank() },
+            ),
+        ).unwrap().toModel()
+    }
+
+    suspend fun deleteTransfer(transferId: String) {
+        apiCall { api.deleteTransfer(transferId) }
+    }
+
+    /**
+     * Campos de cartão enviados na edição de lançamentos/recorrências, como no web:
+     * sem cartão escolhido e com cartão atual envia `clearCreditCard`; cartão igual
+     * ao atual não envia nada; caso contrário envia o novo `creditCardId`.
+     */
+    private fun creditCardFields(
+        next: String?,
+        current: String?,
+    ): Pair<String?, Boolean?> {
+        val nextId = next?.takeIf { it.isNotBlank() }
+        val currentId = current?.takeIf { it.isNotBlank() }
+        return when {
+            nextId == null && currentId != null -> null to true
+            currentId != null && nextId == currentId -> null to null
+            else -> nextId to null
+        }
     }
 
     suspend fun deleteRecurrence(id: String) {

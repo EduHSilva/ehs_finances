@@ -173,6 +173,13 @@ data class TransactionDto(
     val title: String = "",
     val status: String = "OK",
     val accountId: String? = null,
+    // Campos novos do contrato (todos opcionais para tolerar versões antigas da API).
+    val entryType: String? = null,
+    val creditCardId: String? = null,
+    val creditCardName: String? = null,
+    val transferId: String? = null,
+    val counterpartAccountId: String? = null,
+    val invoiceDueDate: String? = null,
 )
 
 @Serializable
@@ -185,6 +192,7 @@ data class AddTransactionRequest(
     val executionDate: String,
     val accountId: String? = null,
     val status: String? = null,
+    val creditCardId: String? = null,
 )
 
 @Serializable
@@ -195,6 +203,8 @@ data class UpdateTransactionRequest(
     val categoryID: String? = null,
     val income: Boolean? = null,
     val status: String? = null,
+    val creditCardId: String? = null,
+    val clearCreditCard: Boolean? = null,
 )
 
 @Serializable
@@ -219,6 +229,8 @@ data class RecurrenceDto(
     val payed: Int? = null,
     val status: String = "ACTIVE",
     val accountId: String? = null,
+    val creditCardId: String? = null,
+    val creditCardName: String? = null,
 )
 
 @Serializable
@@ -233,6 +245,7 @@ data class AddRecurrenceRequest(
     val title: String,
     val accountId: String? = null,
     val status: String? = null,
+    val creditCardId: String? = null,
 )
 
 @Serializable
@@ -245,6 +258,8 @@ data class UpdateRecurrenceRequest(
     val categoryID: String? = null,
     val income: Boolean? = null,
     val status: String? = null,
+    val creditCardId: String? = null,
+    val clearCreditCard: Boolean? = null,
 )
 
 // ---------------------------------------------------------------------------
@@ -331,8 +346,22 @@ data class DashboardSummaryDto(
     val cash: DashboardCashDto = DashboardCashDto(),
     val investments: DashboardInvestmentsDto = DashboardInvestmentsDto(),
     val netWorth: DashboardNetWorthDto = DashboardNetWorthDto(),
+    val cards: DashboardCardsDto? = null,
     val livingCost: LivingCostDto = LivingCostDto(),
     val topCategories: List<CategoryShareDto> = emptyList(),
+)
+
+@Serializable
+data class DashboardCardsDto(
+    val openInvoicesTotal: Double = 0.0,
+    val cards: List<DashboardCardTotalDto> = emptyList(),
+)
+
+@Serializable
+data class DashboardCardTotalDto(
+    val cardId: String = "",
+    val name: String = "",
+    val total: Double = 0.0,
 )
 
 @Serializable
@@ -400,6 +429,9 @@ data class PendingItemDto(
     val income: Boolean = false,
     val date: String? = null,
     val status: String = "",
+    val cardId: String? = null,
+    val cardName: String? = null,
+    val invoiceMonth: String? = null,
 )
 
 @Serializable
@@ -436,6 +468,100 @@ data class ProjectionItemDto(
     val installmentNumber: Int? = null,
     val installments: Int? = null,
     val payed: Int? = null,
+)
+
+// ---------------------------------------------------------------------------
+// Cartões de crédito e faturas
+// ---------------------------------------------------------------------------
+
+@Serializable
+data class CreditCardDto(
+    val id: String = "",
+    val accountId: String = "",
+    val name: String = "",
+    val cardLimit: Double? = null,
+    val closingDay: Int = 1,
+    val dueDay: Int = 1,
+    val status: String = "ACTIVE",
+    val openInvoiceTotal: Double = 0.0,
+)
+
+@Serializable
+data class CreateCreditCardRequest(
+    val accountId: String,
+    val name: String,
+    val cardLimit: Double? = null,
+    val closingDay: Int,
+    val dueDay: Int,
+)
+
+@Serializable
+data class UpdateCreditCardRequest(
+    val name: String,
+    val cardLimit: Double? = null,
+    val closingDay: Int,
+    val dueDay: Int,
+)
+
+@Serializable
+data class CreditCardInvoiceDto(
+    val cardId: String = "",
+    val invoiceMonth: String = "",
+    val closingDate: String? = null,
+    val dueDate: String? = null,
+    val total: Double = 0.0,
+    val paid: Double = 0.0,
+    val remaining: Double = 0.0,
+    val status: String = "OPEN",
+    val payments: List<CreditCardInvoicePaymentDto> = emptyList(),
+)
+
+@Serializable
+data class CreditCardInvoicePaymentDto(
+    val id: String = "",
+    val invoiceMonth: String? = null,
+    val value: Double = 0.0,
+    val date: String? = null,
+    val transactionId: String? = null,
+)
+
+@Serializable
+data class InvoicePaymentRequest(
+    val value: Double,
+    val date: String,
+)
+
+// ---------------------------------------------------------------------------
+// Transferências entre contas
+// ---------------------------------------------------------------------------
+
+@Serializable
+data class TransferRequest(
+    val fromAccountId: String,
+    val toAccountId: String,
+    val value: Double,
+    val date: String,
+    val title: String? = null,
+)
+
+@Serializable
+data class TransferUpdateRequest(
+    val value: Double,
+    val date: String,
+    val title: String? = null,
+)
+
+@Serializable
+data class TransferResponseDto(
+    val transferId: String = "",
+    val fromAccountId: String = "",
+    val toAccountId: String = "",
+    val value: Double = 0.0,
+    val date: String? = null,
+    val title: String? = null,
+    val status: String = "OK",
+    val outTransactionId: String? = null,
+    val inTransactionId: String? = null,
 )
 
 // ---------------------------------------------------------------------------

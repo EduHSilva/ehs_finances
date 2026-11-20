@@ -6,6 +6,11 @@ import com.ehs.finances.data.model.AccountMembers
 import com.ehs.finances.data.model.CashflowProjection
 import com.ehs.finances.data.model.Category
 import com.ehs.finances.data.model.CategoryShare
+import com.ehs.finances.data.model.CreditCard
+import com.ehs.finances.data.model.CreditCardInvoice
+import com.ehs.finances.data.model.CreditCardInvoicePayment
+import com.ehs.finances.data.model.DashboardCardTotal
+import com.ehs.finances.data.model.DashboardCards
 import com.ehs.finances.data.model.DashboardCash
 import com.ehs.finances.data.model.DashboardInvestments
 import com.ehs.finances.data.model.DashboardNetWorth
@@ -29,11 +34,17 @@ import com.ehs.finances.data.model.StatementImportPreviewLine
 import com.ehs.finances.data.model.StatementImportResult
 import com.ehs.finances.data.model.Transaction
 import com.ehs.finances.data.model.TransactionImportAudit
+import com.ehs.finances.data.model.Transfer
 import com.ehs.finances.data.remote.AccountMemberDto
 import com.ehs.finances.data.remote.AccountMembersDto
 import com.ehs.finances.data.remote.CashflowProjectionDto
 import com.ehs.finances.data.remote.CategoryDto
 import com.ehs.finances.data.remote.CategoryShareDto
+import com.ehs.finances.data.remote.CreditCardDto
+import com.ehs.finances.data.remote.CreditCardInvoiceDto
+import com.ehs.finances.data.remote.CreditCardInvoicePaymentDto
+import com.ehs.finances.data.remote.DashboardCardTotalDto
+import com.ehs.finances.data.remote.DashboardCardsDto
 import com.ehs.finances.data.remote.DashboardCashDto
 import com.ehs.finances.data.remote.DashboardInvestmentsDto
 import com.ehs.finances.data.remote.DashboardNetWorthDto
@@ -56,6 +67,7 @@ import com.ehs.finances.data.remote.StatementImportPreviewLineDto
 import com.ehs.finances.data.remote.StatementImportResultDto
 import com.ehs.finances.data.remote.TransactionDto
 import com.ehs.finances.data.remote.TransactionImportAuditDto
+import com.ehs.finances.data.remote.TransferResponseDto
 
 fun CategoryDto.toModel(): Category = Category(
     id = id,
@@ -80,6 +92,12 @@ fun TransactionDto.toModel(): Transaction = Transaction(
     classification = classification,
     recurrence = recurrence,
     accountId = accountId,
+    entryType = entryType?.takeIf { it.isNotBlank() } ?: Transaction.ENTRY_NORMAL,
+    creditCardId = creditCardId,
+    creditCardName = creditCardName,
+    transferId = transferId,
+    counterpartAccountId = counterpartAccountId,
+    invoiceDueDate = invoiceDueDate,
 )
 
 fun RecurrenceDto.toModel(): Recurrence = Recurrence(
@@ -96,6 +114,50 @@ fun RecurrenceDto.toModel(): Recurrence = Recurrence(
     payed = payed,
     status = status,
     accountId = accountId,
+    creditCardId = creditCardId,
+    creditCardName = creditCardName,
+)
+
+fun CreditCardDto.toModel(): CreditCard = CreditCard(
+    id = id,
+    accountId = accountId,
+    name = name,
+    cardLimit = cardLimit,
+    closingDay = closingDay,
+    dueDay = dueDay,
+    status = status.ifBlank { "ACTIVE" },
+    openInvoiceTotal = openInvoiceTotal,
+)
+
+fun CreditCardInvoiceDto.toModel(): CreditCardInvoice = CreditCardInvoice(
+    cardId = cardId,
+    invoiceMonth = invoiceMonth,
+    closingDate = closingDate,
+    dueDate = dueDate,
+    total = total,
+    paid = paid,
+    remaining = remaining,
+    status = status.ifBlank { "OPEN" },
+    payments = payments.map(CreditCardInvoicePaymentDto::toModel),
+)
+
+fun CreditCardInvoicePaymentDto.toModel(): CreditCardInvoicePayment = CreditCardInvoicePayment(
+    id = id,
+    value = value,
+    date = date,
+    transactionId = transactionId,
+)
+
+fun TransferResponseDto.toModel(): Transfer = Transfer(
+    transferId = transferId,
+    fromAccountId = fromAccountId,
+    toAccountId = toAccountId,
+    value = value,
+    date = date,
+    title = title,
+    status = status.ifBlank { "OK" },
+    outTransactionId = outTransactionId,
+    inTransactionId = inTransactionId,
 )
 
 fun FinanceAccountDto.toModel(): FinancialAccount = FinancialAccount(
@@ -237,6 +299,18 @@ fun DashboardSummaryDto.toModel(): DashboardSummary = DashboardSummary(
     netWorth = netWorth.toModel(),
     livingCost = livingCost.toModel(),
     topCategories = topCategories.map(CategoryShareDto::toModel),
+    cards = cards?.toModel(),
+)
+
+fun DashboardCardsDto.toModel(): DashboardCards = DashboardCards(
+    openInvoicesTotal = openInvoicesTotal,
+    cards = cards.map(DashboardCardTotalDto::toModel),
+)
+
+fun DashboardCardTotalDto.toModel(): DashboardCardTotal = DashboardCardTotal(
+    cardId = cardId,
+    name = name,
+    total = total,
 )
 
 fun PendingItemDto.toModel(): PendingItem = PendingItem(
@@ -247,6 +321,9 @@ fun PendingItemDto.toModel(): PendingItem = PendingItem(
     income = income,
     date = date,
     status = status,
+    cardId = cardId,
+    cardName = cardName,
+    invoiceMonth = invoiceMonth,
 )
 
 fun DashboardPendingDto.toModel(): DashboardPending = DashboardPending(

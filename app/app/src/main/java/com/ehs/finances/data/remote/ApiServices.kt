@@ -213,6 +213,57 @@ interface FinancesApi {
     @GET("finances/account-invites")
     suspend fun accountInvites(): Envelope<List<IncomingAccountInviteDto>>
 
+    // ----- Cartões de crédito e faturas ------------------------------------
+
+    @GET("finances/cards")
+    suspend fun cards(@Query("accountId") accountId: String): Envelope<List<CreditCardDto>>
+
+    @GET("finances/cards/{id}")
+    suspend fun card(@Path("id") id: String): Envelope<CreditCardDto>
+
+    @POST("finances/cards")
+    suspend fun createCard(@Body body: CreateCreditCardRequest): Envelope<CreditCardDto>
+
+    @PUT("finances/cards/{id}")
+    suspend fun updateCard(
+        @Path("id") id: String,
+        @Body body: UpdateCreditCardRequest,
+    ): Envelope<CreditCardDto>
+
+    @DELETE("finances/cards/{id}")
+    suspend fun deleteCard(@Path("id") id: String): Envelope<JsonElement?>
+
+    @GET("finances/cards/{id}/invoices")
+    suspend fun cardInvoices(@Path("id") id: String): Envelope<List<CreditCardInvoiceDto>>
+
+    @POST("finances/cards/{id}/invoices/{invoiceMonth}/payments")
+    suspend fun payInvoice(
+        @Path("id") id: String,
+        @Path("invoiceMonth") invoiceMonth: String,
+        @Body body: InvoicePaymentRequest,
+    ): Envelope<CreditCardInvoiceDto>
+
+    @DELETE("finances/cards/{id}/invoices/{invoiceMonth}/payments/{paymentId}")
+    suspend fun deleteInvoicePayment(
+        @Path("id") id: String,
+        @Path("invoiceMonth") invoiceMonth: String,
+        @Path("paymentId") paymentId: String,
+    ): Envelope<JsonElement?>
+
+    // ----- Transferências entre contas --------------------------------------
+
+    @POST("finances/transfers")
+    suspend fun createTransfer(@Body body: TransferRequest): Envelope<TransferResponseDto>
+
+    @PUT("finances/transfers/{transferId}")
+    suspend fun updateTransfer(
+        @Path("transferId") transferId: String,
+        @Body body: TransferUpdateRequest,
+    ): Envelope<TransferResponseDto>
+
+    @DELETE("finances/transfers/{transferId}")
+    suspend fun deleteTransfer(@Path("transferId") transferId: String): Envelope<JsonElement?>
+
     @POST("finances/account-invites/{inviteId}/accept")
     suspend fun acceptAccountInvite(
         @Path("inviteId") inviteId: String,

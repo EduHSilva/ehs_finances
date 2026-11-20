@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ehs.finances.core.network.ApiException
 import com.ehs.finances.core.ui.UiMessage
 import com.ehs.finances.data.model.Category
+import com.ehs.finances.data.model.CreditCard
 import com.ehs.finances.data.model.Recurrence
 import com.ehs.finances.data.model.RecurrenceInput
 import com.ehs.finances.data.repository.FinanceState
@@ -22,6 +23,7 @@ data class RecurrencesUiState(
     val error: String? = null,
     val recurrences: List<Recurrence> = emptyList(),
     val categories: List<Category> = emptyList(),
+    val cards: List<CreditCard> = emptyList(),
     val saving: Boolean = false,
     val deletingId: String? = null,
 ) {
@@ -44,6 +46,7 @@ class RecurrencesViewModel(
 
     private val reload = MutableStateFlow(0)
     private var categoriesLoaded = false
+    private var cardsLoadedFor: String? = null
 
     init {
         viewModelScope.launch {
@@ -65,6 +68,7 @@ class RecurrencesViewModel(
         id: String?,
         input: RecurrenceInput,
         status: String,
+        currentCreditCardId: String? = null,
     ) {
         if (_state.value.saving) return
         val accountId = financeState.activeAccount.value?.id
@@ -78,7 +82,7 @@ class RecurrencesViewModel(
                 if (id == null) {
                     repository.createRecurrence(accountId!!, input, status)
                 } else {
-                    repository.updateRecurrence(id, input, status)
+                    repository.updateRecurrence(id, input, status, currentCreditCardId)
                 }
                 _message.value = UiMessage.Res("recurrenceSaved")
                 _state.value = _state.value.copy(saving = false)
@@ -119,6 +123,7 @@ class RecurrencesViewModel(
                 refreshing = false,
                 error = null,
                 recurrences = emptyList(),
+                cards = emptyList(),
             )
             return
         }
@@ -129,6 +134,12 @@ class RecurrencesViewModel(
                 runCatching { repository.categories() }.getOrNull()?.let { categories ->
                     categoriesLoaded = true
                     _state.value = _state.value.copy(categories = categories)
+                }
+            }
+            if (cardsLoadedFor != accountId || _state.value.cards.isEmpty()) {
+                runCatching { repository.cards(accountId) }.getOrNull()?.let { cards ->
+                    cardsLoadedFor = accountId
+                    _state.value = _state.value.copy(cards = cards)
                 }
             }
             val recurrences = repository.recurrences(accountId)

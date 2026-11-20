@@ -12,6 +12,7 @@ const recurrences = ref()
 const installmentsPurchases = ref()
 const { $financesService } = useNuxtApp()
 const { activeAccount, loadAccounts } = useFinancialAccounts()
+const { cards } = useCreditCards()
 const { t } = useI18n()
 const toast = useToast()
 const categories = await $financesService.getCategories()
@@ -90,6 +91,7 @@ onMounted(() => loadAccounts().then(refresh))
         <AddRecurrenceModal
           ref="modalRef"
           :categories="categories.data.items"
+          :cards="cards"
           :refresh="refresh"
           :recurrency="selectedRecurrence"
         />

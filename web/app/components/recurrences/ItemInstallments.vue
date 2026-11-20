@@ -36,6 +36,15 @@ const categoryLabel = useCategoryLabel()
         <span class="font-medium">
           {{ props.recurrence.title }}
         </span>
+        <UBadge
+          v-if="props.recurrence.creditCardId"
+          size="xs"
+          color="primary"
+          variant="subtle"
+          icon="i-lucide-credit-card"
+        >
+          {{ props.recurrence.creditCardName || $t('card') }}
+        </UBadge>
       </div>
 
       <div class="text-sm text-muted">

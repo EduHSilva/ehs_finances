@@ -1,5 +1,6 @@
 package com.ehs.finances.core.ui
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import com.ehs.finances.core.i18n.LocalStrings
@@ -37,6 +38,64 @@ fun statusLabel(status: String, strings: Strings): String {
     val key = "transactionStatus${status.lowercase().replaceFirstChar { it.uppercase() }}"
     val translated = strings[key]
     return if (translated == key) status else translated
+}
+
+fun invoiceStatusLabel(status: String, strings: Strings): String {
+    val key = "invoiceStatus${status.lowercase().replaceFirstChar { it.uppercase() }}"
+    val translated = strings[key]
+    return if (translated == key) status else translated
+}
+
+fun cardStatusLabel(status: String, strings: Strings): String {
+    val key = "cardStatus${status.lowercase().replaceFirstChar { it.uppercase() }}"
+    val translated = strings[key]
+    return if (translated == key) status else translated
+}
+
+/** Etiqueta de status da fatura (`OPEN`, `PARTIAL`, `PAID`). */
+@Composable
+fun InvoiceStatusTag(status: String, modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier) {
+    val strings = LocalStrings.current
+    val colors = FinancesTheme.colors
+    val primary = MaterialTheme.colorScheme.primary
+    val palette = remember(status, colors, primary) {
+        when (status.uppercase()) {
+            "PAID" -> colors.success to colors.successSoft
+            "PARTIAL" -> colors.warning to colors.warningSoft
+            else -> primary to colors.primarySoft
+        }
+    }
+    Tag(
+        text = invoiceStatusLabel(status, strings),
+        modifier = modifier,
+        color = palette.first,
+        background = palette.second,
+    )
+}
+
+/** Etiqueta curta das movimentações especiais (`CARD`, `TRANSFER`, `INVOICE_PAYMENT`). */
+@Composable
+fun EntryTypeTag(entryType: String, modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier) {
+    val strings = LocalStrings.current
+    val colors = FinancesTheme.colors
+    val primary = MaterialTheme.colorScheme.primary
+    val key = when (entryType.uppercase()) {
+        "CARD" -> "entryBadgeCard"
+        "TRANSFER" -> "entryBadgeTransfer"
+        "INVOICE_PAYMENT" -> "entryBadgeInvoicePayment"
+        else -> return
+    }
+    val color = when (entryType.uppercase()) {
+        "CARD" -> primary
+        "TRANSFER" -> colors.warning
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val background = when (entryType.uppercase()) {
+        "CARD" -> colors.primarySoft
+        "TRANSFER" -> colors.warningSoft
+        else -> colors.primarySoft
+    }
+    Tag(text = strings[key], modifier = modifier, color = color, background = background)
 }
 
 @Composable

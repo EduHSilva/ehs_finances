@@ -26,7 +26,30 @@ data class Transaction(
     val classification: String?,
     val recurrence: String? = null,
     val accountId: String? = null,
-)
+    val entryType: String = ENTRY_NORMAL,
+    val creditCardId: String? = null,
+    val creditCardName: String? = null,
+    val transferId: String? = null,
+    val counterpartAccountId: String? = null,
+    val invoiceDueDate: String? = null,
+) {
+    val isCard: Boolean get() = entryType.equals(ENTRY_CARD, ignoreCase = true)
+    val isTransfer: Boolean get() = entryType.equals(ENTRY_TRANSFER, ignoreCase = true)
+    val isInvoicePayment: Boolean get() = entryType.equals(ENTRY_INVOICE_PAYMENT, ignoreCase = true)
+
+    /**
+     * `TRANSFER` e `INVOICE_PAYMENT` vivem só nos endpoints de transferência/fatura:
+     * o `PUT`/`DELETE` de lançamentos os rejeita.
+     */
+    val isManagedByService: Boolean get() = isTransfer || isInvoicePayment
+
+    companion object {
+        const val ENTRY_NORMAL = "NORMAL"
+        const val ENTRY_CARD = "CARD"
+        const val ENTRY_TRANSFER = "TRANSFER"
+        const val ENTRY_INVOICE_PAYMENT = "INVOICE_PAYMENT"
+    }
+}
 
 data class Recurrence(
     val id: String,
@@ -42,10 +65,66 @@ data class Recurrence(
     val payed: Int?,
     val status: String,
     val accountId: String? = null,
+    val creditCardId: String? = null,
+    val creditCardName: String? = null,
 ) {
     val isInstallment: Boolean get() = type.equals("INSTALLMENT", ignoreCase = true)
     val remaining: Int? get() = installments?.let { total -> (total - (payed ?: 0)).coerceAtLeast(0) }
 }
+
+data class CreditCard(
+    val id: String,
+    val accountId: String,
+    val name: String,
+    val cardLimit: Double?,
+    val closingDay: Int,
+    val dueDay: Int,
+    val status: String,
+    val openInvoiceTotal: Double,
+) {
+    val isActive: Boolean get() = status.equals("ACTIVE", ignoreCase = true)
+
+    /** Uso do limite (informativo: não bloqueia compras). Sem limite, não há uso. */
+    val limitUsage: Double? get() = cardLimit?.takeIf { it > 0.0 }?.let { openInvoiceTotal / it }
+}
+
+data class CreditCardInvoice(
+    val cardId: String,
+    val invoiceMonth: String,
+    val closingDate: String?,
+    val dueDate: String?,
+    val total: Double,
+    val paid: Double,
+    val remaining: Double,
+    val status: String,
+    val payments: List<CreditCardInvoicePayment> = emptyList(),
+) {
+    val isPaid: Boolean get() = status.equals("PAID", ignoreCase = true)
+    val isPartial: Boolean get() = status.equals("PARTIAL", ignoreCase = true)
+    val isOpen: Boolean get() = status.equals("OPEN", ignoreCase = true)
+
+    /** Fatura com saldo em aberto e sem compra pendente. O backend também valida. */
+    val canPay: Boolean get() = !isPaid && remaining > 0.0
+}
+
+data class CreditCardInvoicePayment(
+    val id: String,
+    val value: Double,
+    val date: String?,
+    val transactionId: String? = null,
+)
+
+data class Transfer(
+    val transferId: String,
+    val fromAccountId: String,
+    val toAccountId: String,
+    val value: Double,
+    val date: String?,
+    val title: String?,
+    val status: String,
+    val outTransactionId: String? = null,
+    val inTransactionId: String? = null,
+)
 
 data class Page<T>(
     val items: List<T>,
@@ -204,6 +283,18 @@ data class DashboardSummary(
     val netWorth: DashboardNetWorth,
     val livingCost: LivingCost,
     val topCategories: List<CategoryShare>,
+    val cards: DashboardCards? = null,
+)
+
+data class DashboardCards(
+    val openInvoicesTotal: Double,
+    val cards: List<DashboardCardTotal>,
+)
+
+data class DashboardCardTotal(
+    val cardId: String,
+    val name: String,
+    val total: Double,
 )
 
 data class PendingItem(
@@ -214,7 +305,18 @@ data class PendingItem(
     val income: Boolean,
     val date: String?,
     val status: String,
-)
+    val cardId: String? = null,
+    val cardName: String? = null,
+    val invoiceMonth: String? = null,
+) {
+    val isTransaction: Boolean get() = kind.equals("TRANSACTION", ignoreCase = true)
+    val isRecurrence: Boolean get() = kind.equals("RECURRENCE", ignoreCase = true)
+    val isTransfer: Boolean get() = kind.equals("TRANSFER", ignoreCase = true)
+    val isInvoice: Boolean get() = kind.equals("INVOICE", ignoreCase = true)
+
+    /** Só transação e recorrência podem ser confirmadas por aqui. */
+    val canConfirm: Boolean get() = isTransaction || isRecurrence
+}
 
 data class DashboardPending(
     val accountId: String,

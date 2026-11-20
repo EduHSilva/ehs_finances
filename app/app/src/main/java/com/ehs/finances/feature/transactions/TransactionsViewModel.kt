@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ehs.finances.core.network.ApiException
 import com.ehs.finances.core.ui.UiMessage
 import com.ehs.finances.data.model.Category
+import com.ehs.finances.data.model.CreditCard
 import com.ehs.finances.data.model.Transaction
 import com.ehs.finances.data.model.TransactionInput
 import com.ehs.finances.data.repository.FinanceState
@@ -22,6 +23,7 @@ data class TransactionsUiState(
     val error: String? = null,
     val transactions: List<Transaction> = emptyList(),
     val categories: List<Category> = emptyList(),
+    val cards: List<CreditCard> = emptyList(),
     val search: String = "",
     val categoryFilter: String = FILTER_ALL,
     val statusFilter: String = FILTER_ALL,
@@ -67,6 +69,7 @@ class TransactionsViewModel(
 
     private val reload = MutableStateFlow(0)
     private var categoriesLoaded = false
+    private var cardsLoadedFor: String? = null
 
     init {
         viewModelScope.launch {
@@ -100,6 +103,7 @@ class TransactionsViewModel(
         id: String?,
         input: TransactionInput,
         status: String = "OK",
+        currentCreditCardId: String? = null,
     ) {
         if (_state.value.saving) return
         val accountId = financeState.activeAccount.value?.id
@@ -113,7 +117,7 @@ class TransactionsViewModel(
                 if (id == null) {
                     repository.createTransaction(accountId!!, input, status)
                 } else {
-                    repository.updateTransaction(id, input)
+                    repository.updateTransaction(id, input, currentCreditCardId)
                 }
                 _message.value = UiMessage.Res("transactionSaved")
                 reload.value++
@@ -170,6 +174,7 @@ class TransactionsViewModel(
                 refreshing = false,
                 error = null,
                 transactions = emptyList(),
+                cards = emptyList(),
             )
             return
         }
@@ -181,6 +186,13 @@ class TransactionsViewModel(
                 if (categories != null) {
                     categoriesLoaded = true
                     _state.value = _state.value.copy(categories = categories)
+                }
+            }
+            if (cardsLoadedFor != accountId || _state.value.cards.isEmpty()) {
+                val cards = runCatching { repository.cards(accountId) }.getOrNull()
+                if (cards != null) {
+                    cardsLoadedFor = accountId
+                    _state.value = _state.value.copy(cards = cards)
                 }
             }
             val transactions = repository.transactions(accountId)

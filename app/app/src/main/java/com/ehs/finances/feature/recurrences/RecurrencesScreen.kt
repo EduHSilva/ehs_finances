@@ -59,6 +59,7 @@ import com.ehs.finances.core.ui.components.SwitchRow
 import com.ehs.finances.core.ui.containerViewModel
 import com.ehs.finances.core.ui.theme.FinancesTheme
 import com.ehs.finances.data.model.Category
+import com.ehs.finances.data.model.CreditCard
 import com.ehs.finances.data.model.Recurrence
 import com.ehs.finances.data.model.RecurrenceInput
 import com.ehs.finances.domain.Money
@@ -170,10 +171,11 @@ fun RecurrencesScreen() {
         RecurrenceFormDialog(
             recurrence = editing,
             categories = state.categories,
+            cards = state.cards,
             saving = state.saving,
             onDismiss = { showForm = false },
             onSave = { input, status ->
-                vm.save(editing?.id, input, status)
+                vm.save(editing?.id, input, status, editing?.creditCardId)
                 showForm = false
             },
         )
@@ -226,6 +228,7 @@ private fun RecurrenceRow(
             Text(
                 listOfNotNull(
                     categoryText,
+                    recurrence.creditCardName?.let { "${strings["linkedCard"]}: $it" },
                     strings.format("recurrenceDayLabel", "day" to recurrence.day),
                     strings[if (recurrence.isInstallment) "installmentType" else "monthType"],
                 ).joinToString(" · "),
@@ -287,6 +290,7 @@ private fun RecurrenceRow(
 private fun RecurrenceFormDialog(
     recurrence: Recurrence?,
     categories: List<Category>,
+    cards: List<CreditCard>,
     saving: Boolean,
     onDismiss: () -> Unit,
     onSave: (input: RecurrenceInput, status: String) -> Unit,
@@ -303,10 +307,14 @@ private fun RecurrenceFormDialog(
     var day by remember { mutableStateOf((recurrence?.day ?: 1).toString()) }
     var installments by remember { mutableStateOf(recurrence?.installments?.toString().orEmpty()) }
     var payed by remember { mutableStateOf((recurrence?.payed ?: 0).toString()) }
+    // "" = conta/caixa; id do cartão = ocorrências nascem CARD.
+    var creditCardId by remember { mutableStateOf(recurrence?.creditCardId.orEmpty()) }
     var error by remember { mutableStateOf<String?>(null) }
 
     val categoryOptions = categories.filter { it.income == income }
         .map { DropdownOption(it.id, categoryLabel(it, strings)) }
+    val cardOptions = listOf(DropdownOption("", strings["cashOption"])) +
+        cards.filter { it.isActive }.map { DropdownOption(it.id, it.name) }
 
     FormDialog(
         title = strings[if (recurrence == null) "newRecurrence" else "editRecurrence"],
@@ -338,6 +346,7 @@ private fun RecurrenceFormDialog(
                         day = dayValue!!,
                         installments = if (type == "INSTALLMENT") total else null,
                         payed = if (type == "INSTALLMENT") payedValue else null,
+                        creditCardId = creditCardId.ifBlank { null },
                     ),
                     recurrence?.status ?: "ACTIVE",
                 )
@@ -385,8 +394,35 @@ private fun RecurrenceFormDialog(
                 income = checked
                 val selected = categories.firstOrNull { it.id == categoryId }
                 if (selected != null && selected.income != checked) categoryId = ""
+                // Ocorrência de cartão nasce despesa no v1.
+                if (checked) creditCardId = ""
             },
+            enabled = creditCardId.isBlank(),
         )
+        AppDropdown(
+            label = strings["paymentMethod"],
+            options = if (cards.isEmpty()) listOf(DropdownOption("", strings["cashOption"])) else cardOptions,
+            selectedValue = creditCardId,
+            onSelect = {
+                creditCardId = it
+                if (it.isNotBlank()) income = false
+            },
+            placeholder = strings["cashOption"],
+            enabled = cards.isNotEmpty() && !income,
+        )
+        if (cards.isEmpty()) {
+            Text(
+                strings["noCreditCardsHint"],
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else if (creditCardId.isNotBlank()) {
+            Text(
+                strings["recurrenceCardSyncHint"],
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         AppDropdown(
             label = strings["categoryLabel"],
             options = categoryOptions,

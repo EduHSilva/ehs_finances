@@ -6,8 +6,8 @@ export function getTokenCookie() {
   return useCookie<{ token: string | null } | null>('token', { maxAge: 60 * 60 * 24 * 30 })
 }
 
-export function formatCurrency(value: number) {
-  const language = useI18n().locale.value
+export function formatCurrency(value: number, appLanguage?: string) {
+  const language = appLanguage ?? useI18n().locale.value
   const locale = language === 'pt' ? 'pt-BR' : 'en-US'
   const currency = language === 'pt' ? 'BRL' : 'USD'
   return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value)

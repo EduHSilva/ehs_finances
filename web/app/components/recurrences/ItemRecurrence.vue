@@ -36,6 +36,16 @@ const categoryLabel = useCategoryLabel()
       >
         {{ $t(`recurrenceStatus.${(props.recurrence.status || 'inactive').toLowerCase()}`) }}
       </UBadge>
+
+      <UBadge
+        v-if="props.recurrence.creditCardId"
+        size="xs"
+        color="primary"
+        variant="subtle"
+        icon="i-lucide-credit-card"
+      >
+        {{ props.recurrence.creditCardName || $t('card') }}
+      </UBadge>
     </div>
 
     <div class="text-sm text-muted flex flex-wrap gap-1">

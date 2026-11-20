@@ -41,6 +41,13 @@ const links = [[{
   onSelect: () => {
     open.value = false
   }
+}, {
+  label: $t('cards'),
+  icon: 'i-lucide-credit-card',
+  to: '/cards',
+  onSelect: () => {
+    open.value = false
+  }
 },
 {
   label: $t('settings'),
