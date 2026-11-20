@@ -30,7 +30,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -38,15 +40,20 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ehs.finances.core.i18n.LocalStrings
+import com.ehs.finances.core.i18n.Strings
 import com.ehs.finances.core.ui.MessageEffect
+import com.ehs.finances.core.ui.components.AppTextField
 import com.ehs.finances.core.ui.components.ContentCard
 import com.ehs.finances.core.ui.components.EmptyNote
 import com.ehs.finances.core.ui.components.ErrorBanner
+import com.ehs.finances.core.ui.components.FormDialog
+import com.ehs.finances.core.ui.components.FormError
 import com.ehs.finances.core.ui.components.LinkButton
 import com.ehs.finances.core.ui.components.LoadingScreen
 import com.ehs.finances.core.ui.components.RefreshableColumn
@@ -56,11 +63,13 @@ import com.ehs.finances.core.ui.components.SegmentedToggle
 import com.ehs.finances.core.ui.containerViewModel
 import com.ehs.finances.core.ui.theme.FinancesTheme
 import com.ehs.finances.data.model.CategoryShare
+import com.ehs.finances.data.model.PendingItem
 import com.ehs.finances.data.model.ProjectionItem
 import com.ehs.finances.data.model.ProjectionPoint
 import com.ehs.finances.data.model.Recurrence
 import com.ehs.finances.domain.ApiDates
 import com.ehs.finances.domain.Money
+import java.math.BigDecimal
 import java.time.YearMonth
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -79,6 +88,8 @@ fun DashboardScreen(
     val strings = LocalStrings.current
 
     MessageEffect(message, onConsumed = vm::consumeMessage)
+
+    var confirmTarget by remember { mutableStateOf<PendingItem?>(null) }
 
     RefreshableColumn(
         isRefreshing = state.refreshing,
@@ -368,7 +379,7 @@ fun DashboardScreen(
                                 if (state.confirmingId == item.id) {
                                     CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                                 } else {
-                                    IconButton(onClick = { vm.confirmPending(item) }) {
+                                    IconButton(onClick = { confirmTarget = item }) {
                                         Icon(
                                             Icons.Filled.Check,
                                             contentDescription = strings["confirm"],
@@ -419,6 +430,67 @@ fun DashboardScreen(
                 }
             }
         }
+    }
+
+    confirmTarget?.let { item ->
+        ConfirmPendingDialog(
+            item = item,
+            strings = strings,
+            onDismiss = { confirmTarget = null },
+            onConfirm = { value ->
+                vm.confirmPending(item, value)
+                confirmTarget = null
+            },
+        )
+    }
+}
+
+@Composable
+private fun ConfirmPendingDialog(
+    item: PendingItem,
+    strings: Strings,
+    onDismiss: () -> Unit,
+    onConfirm: (Double) -> Unit,
+) {
+    val recurrence = !item.kind.equals("TRANSACTION", ignoreCase = true)
+    var value by remember {
+        mutableStateOf(BigDecimal.valueOf(item.amount).stripTrailingZeros().toPlainString())
+    }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    FormDialog(
+        title = strings[if (recurrence) "confirmRecurrenceTitle" else "confirmTransactionTitle"],
+        onDismiss = onDismiss,
+        confirmLabel = strings["confirm"],
+        onConfirm = {
+            val amount = Money.parse(value)
+            if (amount == null || amount <= 0.0) {
+                error = "confirmValueInvalid"
+            } else {
+                onConfirm(amount)
+            }
+        },
+    ) {
+        Text(
+            "${item.title} · ${ApiDates.format(ApiDates.parse(item.date), strings.locale)}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        AppTextField(
+            value = value,
+            onValueChange = {
+                value = it
+                error = null
+            },
+            label = strings["valueLabel"],
+            keyboardType = KeyboardType.Decimal,
+        )
+        Text(
+            strings[if (recurrence) "confirmRecurrenceHelp" else "confirmValueHelp"],
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        FormError(error?.let { strings[it] })
     }
 }
 

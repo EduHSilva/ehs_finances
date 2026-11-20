@@ -70,15 +70,15 @@ class DashboardViewModel(
         _message.value = null
     }
 
-    fun confirmPending(item: PendingItem) {
+    fun confirmPending(item: PendingItem, value: Double) {
         if (_state.value.confirmingId != null) return
         viewModelScope.launch {
             _state.value = _state.value.copy(confirmingId = item.id)
             try {
                 if (item.kind.equals("TRANSACTION", ignoreCase = true)) {
-                    repository.confirmTransaction(item.id)
+                    repository.confirmTransaction(item.id, value)
                 } else {
-                    repository.confirmRecurrence(item.id)
+                    repository.confirmRecurrence(item.id, value)
                 }
                 _message.value = UiMessage.Res("pendingConfirmed")
                 reload.value++

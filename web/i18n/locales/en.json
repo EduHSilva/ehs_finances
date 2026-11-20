@@ -336,6 +336,7 @@
     "categoryGoalsTitle": "Goals by category",
     "categoryGoalsDesc": "Expected by goal (%) and realized this month. Categories without transactions are hidden.",
     "categoryGoalsIncome": "Month income: {income}",
+    "categoryGoalsSubtotal": "Subtotal",
     "categoryGoalsEmpty": "No expense category has transactions this month.",
     "categoryGoalAchieved": "{value}% of goal",
     "categoryGoalShare": "{value}% of income",

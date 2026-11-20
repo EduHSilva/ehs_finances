@@ -280,7 +280,9 @@ data class MonthlyGoalRequest(
     val dtInicio: String? = null,
     val dtFim: String? = null,
     val active: Boolean,
-    val reserve: Boolean = false,
+    // Sem default de propósito: com encodeDefaults=false o campo sumiria do corpo e o
+    // Jackson 3 do backend rejeita `null` em primitive booleano (400 "Invalid request").
+    val reserve: Boolean,
 )
 
 @Serializable

@@ -106,6 +106,7 @@ const categoryReport = computed(() => {
         title: category.title,
         defaultKey: category.defaultKey,
         color: category.color,
+        classification: category.classification || 'ESSENTIAL',
         goal: category.goal,
         expected,
         realized,

@@ -101,6 +101,9 @@
 - `reserve`: no máximo uma meta por conta pode ser marcada como reserva; marcar outra
   desmarca a anterior. A reserva não é o caixa: é o valor acumulado da meta (saldo inicial +
   aportes/ajustes) e alimenta os "meses de reserva" na dashboard.
+- Relatório "Metas por categoria": agrupa as categorias de despesa com lançamentos no mês
+  por classificação (Essencial/Investimento/Lazer), cada grupo com subtotal realizado ÷
+  esperado; categorias sem lançamentos no mês não aparecem.
 
 ## Importação de extrato
 

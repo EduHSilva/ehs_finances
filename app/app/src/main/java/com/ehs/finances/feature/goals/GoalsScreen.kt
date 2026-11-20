@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ehs.finances.core.i18n.LocalStrings
 import com.ehs.finances.core.ui.MessageEffect
+import com.ehs.finances.core.ui.classificationLabel
 import com.ehs.finances.core.ui.components.AppDateField
 import com.ehs.finances.core.ui.components.AppDropdown
 import com.ehs.finances.core.ui.components.AppTextField
@@ -195,9 +196,17 @@ fun GoalsScreen() {
                     if (report.isEmpty()) {
                         EmptyNote(strings["noCategoryReport"])
                     } else {
-                        report.forEachIndexed { index, row ->
-                            if (index > 0) HorizontalDivider(Modifier.padding(vertical = 10.dp))
-                            CategoryReportRow(row = row, income = state.monthlyIncome)
+                        categoryGoalGroups(report).forEachIndexed { index, (classification, rows) ->
+                            if (index > 0) HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                            CategoryGroupHeader(
+                                classification = classification,
+                                realized = rows.sumOf { it.realized },
+                                expected = rows.sumOf { it.expected },
+                            )
+                            rows.forEach { row ->
+                                Spacer(Modifier.height(10.dp))
+                                CategoryReportRow(row = row, income = state.monthlyIncome)
+                            }
                         }
                     }
                 }
@@ -410,6 +419,43 @@ private fun GoalCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+private val CATEGORY_GROUP_ORDER = listOf("ESSENTIAL", "INVESTMENT", "RECREATION")
+
+private fun categoryGoalGroups(rows: List<CategoryGoalRow>): List<Pair<String, List<CategoryGoalRow>>> =
+    CATEGORY_GROUP_ORDER.mapNotNull { classification ->
+        val groupRows = rows.filter { row ->
+            val key = row.classification.uppercase().takeIf { it in CATEGORY_GROUP_ORDER } ?: "ESSENTIAL"
+            key == classification
+        }
+        if (groupRows.isEmpty()) null else classification to groupRows
+    }
+
+@Composable
+private fun CategoryGroupHeader(classification: String, realized: Double, expected: Double) {
+    val strings = LocalStrings.current
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            classificationLabel(classification, strings) ?: classification,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            "${strings["categorySubtotal"]}: " +
+                "${Money.format(realized, strings.locale)} / ${Money.format(expected, strings.locale)}",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
