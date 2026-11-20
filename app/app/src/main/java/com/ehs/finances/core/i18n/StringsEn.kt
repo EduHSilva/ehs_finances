@@ -330,7 +330,7 @@ internal val enStrings: Map<String, String> = mapOf(
     "categoryShare" to "{value}% of income",
     "categorySubtotal" to "Subtotal",
     "categoryGoalsGoal" to "Goal",
-    "categoryGoalAchieved" to "{value}% of goal",
+    "categoryGoalsRealizedPercent" to "{value}% realized",
     "noGoalSet" to "no goal",
     "noCategoryReport" to "No expense category has transactions this month.",
     "noIncomeBase" to "No income this month to compare",

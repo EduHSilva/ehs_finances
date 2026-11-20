@@ -338,6 +338,7 @@
     "categoryGoalsIncome": "Entradas do mês: {income}",
     "categoryGoalsSubtotal": "Subtotal",
     "categoryGoalsGoal": "Meta",
+    "categoryGoalsRealizedPercent": "{value}% realizado",
     "categoryGoalsEmpty": "Nenhuma categoria de saída com lançamentos neste mês.",
     "categoryGoalAchieved": "{value}% da meta",
     "categoryGoalShare": "{value}% das entradas",

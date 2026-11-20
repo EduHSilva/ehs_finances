@@ -338,6 +338,7 @@
     "categoryGoalsIncome": "Month income: {income}",
     "categoryGoalsSubtotal": "Subtotal",
     "categoryGoalsGoal": "Goal",
+    "categoryGoalsRealizedPercent": "{value}% realized",
     "categoryGoalsEmpty": "No expense category has transactions this month.",
     "categoryGoalAchieved": "{value}% of goal",
     "categoryGoalShare": "{value}% of income",

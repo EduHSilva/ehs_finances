@@ -102,9 +102,9 @@
   desmarca a anterior. A reserva não é o caixa: é o valor acumulado da meta (saldo inicial +
   aportes/ajustes) e alimenta os "meses de reserva" na dashboard.
 - Relatório "Metas por categoria": agrupa as categorias de despesa com lançamentos no mês
-  por classificação (Essencial/Investimento/Lazer); cada grupo mostra a meta somada (%), o
-  % realizado sobre o esperado e o subtotal realizado ÷ esperado. Categorias sem
-  lançamentos no mês não aparecem.
+  por classificação (Essencial/Investimento/Lazer); cada grupo mostra a meta somada (%) e o
+  % realizado sobre as entradas (mesma base da meta), além do subtotal realizado ÷ esperado.
+  Categorias sem lançamentos no mês não aparecem.
 
 ## Importação de extrato
 

@@ -382,7 +382,7 @@ private val ptBr: Map<String, String> = mapOf(
     "categoryShare" to "{value}% das entradas",
     "categorySubtotal" to "Subtotal",
     "categoryGoalsGoal" to "Meta",
-    "categoryGoalAchieved" to "{value}% da meta",
+    "categoryGoalsRealizedPercent" to "{value}% realizado",
     "noGoalSet" to "sem meta",
     "noCategoryReport" to "Nenhuma categoria de saída com lançamentos neste mês.",
     "noIncomeBase" to "Sem entradas no mês para comparar",

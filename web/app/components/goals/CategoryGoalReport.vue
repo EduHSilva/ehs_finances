@@ -33,12 +33,12 @@ const groups = computed(() => CLASSIFICATIONS
     const expected = rows.reduce((total, row) => total + row.expected, 0)
     const realized = rows.reduce((total, row) => total + row.realized, 0)
     const goal = rows.reduce((total, row) => total + row.goal, 0)
-    const achieved = expected > 0 ? realized / expected * 100 : null
+    const share = props.income > 0 ? realized / props.income * 100 : null
     const summary = [
       goal > 0 ? `${t('categoryGoalsGoal')} ${goal}%` : null,
-      achieved !== null ? t('categoryGoalAchieved', { value: Math.round(achieved) }) : null
+      share !== null ? t('categoryGoalsRealizedPercent', { value: Math.round(share) }) : null
     ].filter(Boolean).join(' · ') || t('noGoalSet')
-    return { key, rows, expected, realized, goal, achieved, summary }
+    return { key, rows, expected, realized, goal, share, summary }
   })
   .filter(group => group.rows.length > 0))
 </script>

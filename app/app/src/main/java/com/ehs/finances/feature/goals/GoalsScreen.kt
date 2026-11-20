@@ -203,7 +203,8 @@ fun GoalsScreen() {
                             CategoryGroupHeader(
                                 classification = classification,
                                 goalPercent = rows.sumOf { it.goal },
-                                achieved = if (expected > 0) realized / expected * 100.0 else null,
+                                share = state.monthlyIncome.takeIf { it > 0 }
+                                    ?.let { realized / it * 100.0 },
                                 realized = realized,
                                 expected = expected,
                             )
@@ -441,14 +442,14 @@ private fun categoryGoalGroups(rows: List<CategoryGoalRow>): List<Pair<String, L
 private fun CategoryGroupHeader(
     classification: String,
     goalPercent: Int,
-    achieved: Double?,
+    share: Double?,
     realized: Double,
     expected: Double,
 ) {
     val strings = LocalStrings.current
     val summary = listOfNotNull(
         if (goalPercent > 0) "${strings["categoryGoalsGoal"]} $goalPercent%" else null,
-        achieved?.let { strings.format("categoryGoalAchieved", "value" to it.roundToInt()) },
+        share?.let { strings.format("categoryGoalsRealizedPercent", "value" to it.roundToInt()) },
     ).joinToString(" · ").ifEmpty { strings["noGoalSet"] }
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(
