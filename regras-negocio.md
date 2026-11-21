@@ -60,6 +60,8 @@
 - Nas telas, receitas aparecem primeiro, um separador e depois as despesas; dentro de cada
   grupo a ordem é meta (%) decrescente e depois título alfabético. A API devolve na mesma
   ordem (receitas primeiro, meta decrescente, título).
+- As despesas são exibidas em grupos por classificação — Essencial → Investimento → Lazer —
+  cada um com subtotal da soma das metas (%) das categorias do grupo.
 
 ## Lançamentos (transações)
 

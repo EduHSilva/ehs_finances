@@ -86,6 +86,11 @@ fun CategoriesScreen() {
     var editing by remember { mutableStateOf<Category?>(null) }
     var deleteTarget by remember { mutableStateOf<Category?>(null) }
 
+    fun openEditor(category: Category) {
+        editing = category
+        showForm = true
+    }
+
     RefreshableColumn(
         isRefreshing = state.refreshing,
         onRefresh = vm::refresh,
@@ -138,18 +143,45 @@ fun CategoriesScreen() {
             )
             state.filtered.isEmpty() -> EmptyNote(strings["noCategories"])
             else -> ContentCard {
-                val groups = listOf(state.income, state.expenses).filter { it.isNotEmpty() }
-                groups.forEachIndexed { groupIndex, rows ->
-                    if (groupIndex > 0) HorizontalDivider(Modifier.padding(vertical = 12.dp))
-                    rows.forEachIndexed { index, category ->
+                if (state.income.isNotEmpty()) {
+                    state.income.forEachIndexed { index, category ->
                         if (index > 0) HorizontalDivider(Modifier.padding(vertical = 10.dp))
                         CategoryRow(
                             category = category,
                             deleting = state.deletingId == category.id,
-                            onEdit = {
-                                editing = category
-                                showForm = true
-                            },
+                            onEdit = { openEditor(category) },
+                            onDelete = { deleteTarget = category },
+                        )
+                    }
+                    if (state.expenseGroups.isNotEmpty()) {
+                        HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                    }
+                }
+                state.expenseGroups.forEachIndexed { groupIndex, group ->
+                    if (groupIndex > 0) HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            classificationLabel(group.classification, strings) ?: group.classification,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            "${strings["categoryGoalsGoal"]} ${group.goalTotal}%",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    group.categories.forEachIndexed { index, category ->
+                        if (index > 0) HorizontalDivider(Modifier.padding(vertical = 10.dp))
+                        CategoryRow(
+                            category = category,
+                            deleting = state.deletingId == category.id,
+                            onEdit = { openEditor(category) },
                             onDelete = { deleteTarget = category },
                         )
                     }

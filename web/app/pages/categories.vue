@@ -42,7 +42,26 @@ function sortByGoalThenLabel(rows: Category[]) {
 }
 
 const incomeData = computed(() => sortByGoalThenLabel(filteredData.value.filter(category => category.income)))
-const expenseData = computed(() => sortByGoalThenLabel(filteredData.value.filter(category => !category.income)))
+
+const EXPENSE_GROUP_ORDER = ['ESSENTIAL', 'INVESTMENT', 'RECREATION'] as const
+
+function expenseGroupKey(category: Category) {
+  return EXPENSE_GROUP_ORDER.find(key => key === category.classification) ?? 'ESSENTIAL'
+}
+
+const expenseGroups = computed(() => {
+  const rows = sortByGoalThenLabel(filteredData.value.filter(category => !category.income))
+  return EXPENSE_GROUP_ORDER
+    .map((classification) => {
+      const groupRows = rows.filter(category => expenseGroupKey(category) === classification)
+      return {
+        classification,
+        rows: groupRows,
+        goalTotal: groupRows.reduce((sum, category) => sum + category.goal, 0)
+      }
+    })
+    .filter(group => group.rows.length > 0)
+})
 
 const modalRef = ref<InstanceType<typeof AddCategoryModal> | null>(null)
 
@@ -109,15 +128,28 @@ refresh()
           @delete="confirmDelete"
         />
         <USeparator
-          v-if="incomeData.length && expenseData.length"
+          v-if="incomeData.length && expenseGroups.length"
           class="my-4"
         />
-        <ListCategories
-          :data="expenseData"
-          :title="incomeData.length ? undefined : $t('categories')"
-          @edit="openEditModal"
-          @delete="confirmDelete"
-        />
+        <div
+          v-for="(group, index) in expenseGroups"
+          :key="group.classification"
+          :class="index > 0 ? 'mt-4' : ''"
+        >
+          <div class="mb-2 flex items-center justify-between gap-3">
+            <h3 class="text-sm font-semibold">
+              {{ $t(group.classification.toLowerCase()) }}
+            </h3>
+            <span class="text-xs text-muted">
+              {{ $t('categoryGoalsGoal') }} {{ group.goalTotal }}%
+            </span>
+          </div>
+          <ListCategories
+            :data="group.rows"
+            @edit="openEditModal"
+            @delete="confirmDelete"
+          />
+        </div>
       </template>
     </UDashboardPanel>
   </DashLayout>

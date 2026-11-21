@@ -12,6 +12,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+data class CategoryGroup(
+    val classification: String,
+    val categories: List<Category>,
+) {
+    val goalTotal: Int get() = categories.sumOf { it.goal }
+}
+
 data class CategoriesUiState(
     val loading: Boolean = false,
     val refreshing: Boolean = false,
@@ -39,13 +46,23 @@ data class CategoriesUiState(
     val income: List<Category>
         get() = sortedForDisplay(filtered.filter { it.income })
 
-    val expenses: List<Category>
-        get() = sortedForDisplay(filtered.filterNot { it.income })
+    val expenseGroups: List<CategoryGroup>
+        get() {
+            val grouped = sortedForDisplay(filtered.filterNot { it.income })
+                .groupBy { groupKey(it.classification) }
+            return GROUP_ORDER.mapNotNull { classification ->
+                grouped[classification]?.let { CategoryGroup(classification, it) }
+            }
+        }
+
+    private fun groupKey(classification: String): String =
+        classification.takeIf { key -> key in GROUP_ORDER } ?: GROUP_ORDER.first()
 
     private fun sortedForDisplay(rows: List<Category>) =
         rows.sortedWith(compareByDescending<Category> { it.goal }.thenBy { it.title.lowercase() })
 
     companion object {
+        val GROUP_ORDER = listOf("ESSENTIAL", "INVESTMENT", "RECREATION")
         const val TYPE_ALL = "__all"
         const val TYPE_INCOME = "income"
         const val TYPE_EXPENSE = "expense"
