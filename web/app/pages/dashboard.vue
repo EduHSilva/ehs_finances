@@ -25,7 +25,7 @@ const installmentLabels = computed(() => {
   const result: Record<number, string> = {}
   if (!projection.value) return result
 
-  const items = projection.value.items
+  const items = (projection.value.items ?? [])
     .map((item, index) => ({ item, index }))
     .filter(({ item }) => item.kind.toLowerCase() === 'installment')
     .sort((a, b) => a.item.date.localeCompare(b.item.date))
@@ -478,11 +478,11 @@ onMounted(async () => {
               :title="$t('projectionAssumptions')"
             >
               <ul
-                v-if="projection.assumptions.length"
+                v-if="projection.assumptions?.length"
                 class="list-disc space-y-2 pl-5 text-sm text-muted"
               >
                 <li
-                  v-for="assumption in projection.assumptions"
+                  v-for="assumption in projection.assumptions ?? []"
                   :key="assumption"
                 >
                   {{ assumption }}
@@ -557,11 +557,11 @@ onMounted(async () => {
             :title="$t('projectionItems')"
           >
             <div
-              v-if="projection.items.length"
+              v-if="projection.items?.length"
               class="divide-y divide-default"
             >
               <div
-                v-for="(item, index) in projection.items"
+                v-for="(item, index) in projection.items ?? []"
                 :key="`${item.date}-${item.title}-${index}`"
                 class="flex items-center justify-between gap-4 py-3"
               >

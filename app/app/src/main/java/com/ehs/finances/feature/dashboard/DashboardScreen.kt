@@ -640,22 +640,24 @@ private fun SummaryMetricCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
                 )
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        row.value,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = row.color ?: MaterialTheme.colorScheme.onSurface,
-                    )
-                    if (row.caption != null) {
-                        Text(
-                            row.caption,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.End,
-                        )
-                    }
-                }
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    row.value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = row.color ?: MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.End,
+                )
+            }
+            if (row.caption != null) {
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    row.caption,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
     }

@@ -38,8 +38,8 @@ async function createAccount(event: FormSubmitEvent<AccountForm>) {
 }
 
 const localeOptions = [
-  { value: 'pt', label: '🇧🇷 Português' },
-  { value: 'en', label: '🇺🇸 English' }
+  { value: 'pt', label: '🇧🇷' },
+  { value: 'en', label: '🇺🇸' }
 ]
 
 function updateLocale(value: string) {
@@ -59,14 +59,6 @@ function updateLocale(value: string) {
     <template #right>
       <slot />
 
-      <UBadge
-        v-if="activeAccount"
-        color="primary"
-        variant="subtle"
-        class="md:hidden"
-      >
-        {{ activeAccount?.type }}
-      </UBadge>
       <UButton icon="i-lucide-plus" color="neutral" variant="ghost" class="md:hidden" :aria-label="$t('newAccount')" @click="createAccountOpen = true" />
 
       <div class="hidden items-center gap-2 md:flex">

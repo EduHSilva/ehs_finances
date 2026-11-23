@@ -9,13 +9,11 @@ useHead({
   meta: [
     { charset: 'utf-8' },
     { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-    { key: 'theme-color', name: 'theme-color', content: color },
-    { name: 'apple-mobile-web-app-title', content: 'Finanças' }
+    { key: 'theme-color', name: 'theme-color', content: color }
   ],
   link: [
     { rel: 'icon', type: 'image/svg+xml', href: `${appBase}favicon.svg` },
     { rel: 'icon', href: `${appBase}favicon.ico`, sizes: '32x32' },
-    { rel: 'manifest', href: `${appBase}manifest.webmanifest` },
     { rel: 'apple-touch-icon', href: `${appBase}apple-touch-icon.png` }
   ],
   htmlAttrs: {
