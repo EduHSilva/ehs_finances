@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -70,6 +71,7 @@ import com.ehs.finances.feature.cards.CardsScreen
 import com.ehs.finances.feature.categories.CategoriesScreen
 import com.ehs.finances.feature.dashboard.DashboardScreen
 import com.ehs.finances.feature.goals.GoalsScreen
+import com.ehs.finances.feature.investments.InvestmentsScreen
 import com.ehs.finances.feature.profile.ProfileScreen
 import com.ehs.finances.feature.recurrences.RecurrencesScreen
 import com.ehs.finances.feature.transactions.StatementImportScreen
@@ -82,6 +84,7 @@ private object Routes {
     const val CATEGORIES = "categories"
     const val RECURRENCES = "recurrences"
     const val GOALS = "goals"
+    const val INVESTMENTS = "investments"
     const val PROFILE = "profile"
     const val IMPORT = "import/{review}"
     const val CARDS = "cards"
@@ -103,6 +106,7 @@ private val tabs = listOf(
     Tab(Routes.CATEGORIES, "categories", Icons.Filled.Category),
     Tab(Routes.RECURRENCES, "recurrences", Icons.Filled.Repeat),
     Tab(Routes.GOALS, "goals", Icons.Filled.Flag),
+    Tab(Routes.INVESTMENTS, "investments", Icons.Filled.TrendingUp),
 )
 
 /** Raiz do app: aplica tema/idioma e alterna entre login e área autenticada. */
@@ -236,6 +240,7 @@ private fun AuthenticatedApp(container: AppContainer) {
                 composable(Routes.CATEGORIES) { CategoriesScreen() }
                 composable(Routes.RECURRENCES) { RecurrencesScreen() }
                 composable(Routes.GOALS) { GoalsScreen() }
+                composable(Routes.INVESTMENTS) { InvestmentsScreen() }
                 composable(Routes.PROFILE) {
                     ProfileScreen(onBack = { navController.popBackStack() })
                 }

@@ -49,8 +49,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ehs.finances.core.i18n.LocalStrings
 import com.ehs.finances.core.i18n.Strings
 import com.ehs.finances.core.ui.MessageEffect
+import com.ehs.finances.core.ui.components.AppDropdown
 import com.ehs.finances.core.ui.components.AppTextField
 import com.ehs.finances.core.ui.components.ContentCard
+import com.ehs.finances.core.ui.components.DropdownOption
 import com.ehs.finances.core.ui.components.EmptyNote
 import com.ehs.finances.core.ui.components.ErrorBanner
 import com.ehs.finances.core.ui.components.FormDialog
@@ -60,7 +62,6 @@ import com.ehs.finances.core.ui.components.LoadingScreen
 import com.ehs.finances.core.ui.components.RefreshableColumn
 import com.ehs.finances.core.ui.components.ScreenTitle
 import com.ehs.finances.core.ui.components.SectionHeader
-import com.ehs.finances.core.ui.components.SegmentedToggle
 import com.ehs.finances.core.ui.containerViewModel
 import com.ehs.finances.core.ui.theme.FinancesTheme
 import com.ehs.finances.data.model.CategoryShare
@@ -106,11 +107,14 @@ fun DashboardScreen(
             title = strings["dashboard"],
             subtitle = strings["projectionTitle"],
             action = {
-                SegmentedToggle(
-                    options = DashboardViewModel.HORIZONS.map { "$it d" },
-                    selectedIndex = DashboardViewModel.HORIZONS.indexOf(state.days).coerceAtLeast(0),
-                    onSelect = { index -> vm.setDays(DashboardViewModel.HORIZONS[index]) },
-                    modifier = Modifier.width(190.dp),
+                AppDropdown(
+                    label = strings["projectionMonth"],
+                    options = DashboardViewModel.monthOptions().map { month ->
+                        DropdownOption(month.toString(), ApiDates.formatMonth(month, strings.locale))
+                    },
+                    selectedValue = state.month.toString(),
+                    onSelect = { value -> runCatching { YearMonth.parse(value) }.getOrNull()?.let(vm::setMonth) },
+                    modifier = Modifier.width(170.dp),
                 )
             },
         )
@@ -190,7 +194,10 @@ fun DashboardScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            strings.format("netWorthProjected", "days" to state.days),
+                            strings.format(
+                                "projectedUntil",
+                                "date" to ApiDates.format(state.month.atEndOfMonth(), strings.locale),
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

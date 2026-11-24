@@ -28,7 +28,7 @@ const schema = z.object({
   fromAccountId: z.string().min(1, 'Required'),
   toAccountId: z.string().min(1, 'Required'),
   value: z.coerce.number().positive(t('confirmValueInvalid')),
-  date: z.any(),
+  date: z.date().optional(),
   title: z.string().trim().max(80).optional()
 }).superRefine((data, ctx) => {
   if (data.fromAccountId === data.toAccountId) {
@@ -194,7 +194,7 @@ defineExpose({ openModal, closeModal })
             required
             class="flex-1"
           >
-            <UInputDate
+            <DateField
               v-model="state.date"
               :locale="localeTag"
             />

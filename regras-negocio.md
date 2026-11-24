@@ -21,7 +21,8 @@
   (cookie `active-financial-account-<userId>`).
 - Saldo (caixa) = saldo inicial + entradas − saídas **confirmadas** com data até hoje,
   somando lançamentos `NORMAL`, `TRANSFER` e `INVOICE_PAYMENT`; compras `CARD` só saem do
-  caixa quando a fatura é paga.
+  caixa quando a fatura é paga. "Até hoje" inclui o dia inteiro: o corte é o início de
+  amanhã (UTC), não o instante atual — lançamentos de hoje já entram no saldo.
 - Cartão de crédito **não** é um tipo de conta e não entra no seletor de conta: é uma
   forma de pagamento vinculada à conta (ver "Cartões de crédito").
 - Não há exclusão de conta (só criação/listagem/consulta). Moeda é fixa em `BRL`.
@@ -181,6 +182,9 @@
   por classificação (Essencial/Investimento/Lazer); cada grupo mostra a meta somada (%) e o
   % realizado sobre as entradas (mesma base da meta), além do subtotal realizado ÷ esperado.
   Categorias sem lançamentos no mês não aparecem.
+- Telas (web e app): a aba **Investimentos** lista as metas mensais (esperado, realizado,
+  aportes e objetivo); a aba **Metas** mostra só o relatório por categoria, com um card no
+  topo destacando o % realizado das entradas em essenciais, lazer e investimentos.
 
 ## Importação de extrato
 
@@ -203,19 +207,24 @@
 
 ## Projeção e painéis
 
-- `/dashboard/projection`: horizonte de 30, 90 (padrão) ou 180 dias; parte do saldo
+- `/dashboard/projection`, `/dashboard/pending` e `/dashboard/summary` aceitam
+  `month=YYYY-MM` (mês atual ou futuro, até 12 meses à frente): o horizonte vai até o
+  último dia do mês escolhido. Sem `month` vale o parâmetro `days` (limites de cada rota).
+- `/dashboard/projection`: parte do saldo
   atual, soma lançamentos futuros `OK`, recorrências `MONTH` ativas e parcelas restantes,
   e estima o fluxo variável pela média de 6 meses. Compras `CARD` entram pelo vencimento
   da fatura (ciclo já pago fica de fora; fatura aberta atrasada entra como saída imediata);
   `TRANSFER` entra na própria data; a média variável ignora `TRANSFER` e
   `INVOICE_PAYMENT`. Confiança: alta (≥ 24 amostras), média (≥ 6), baixa (menos).
-- `/dashboard/pending`: pendências dos próximos N dias (padrão 30, máx. 365) e
+- `/dashboard/pending`: pendências no horizonte (padrão 30 dias, máx. 365) e
   materializa as recorrências antes. Inclui compras `CARD` pendentes como `TRANSACTION`,
   faturas abertas como `INVOICE` (vencimento na janela ou atrasadas, exibidas com a data
   de hoje) e transferências futuras como `TRANSFER`.
 - `/dashboard/investments`: aportes (despesas) e resgates (receitas) da classificação
   `INVESTMENT`, com líquido.
-- `/dashboard/summary`: agrega o mês corrente e o horizonte de projeção (30–180, padrão 90).
+- `/dashboard/summary`: agrega o mês corrente e o horizonte de projeção. O bloco "mês"
+  (resultado, categorias, custo de vida) continua sempre no mês corrente, mesmo com outro
+  mês selecionado; só a projeção acompanha o `month`.
   - Mês: receitas e despesas até hoje por competência (`NORMAL` + `CARD`); `TRANSFER` e
     `INVOICE_PAYMENT` ficam fora. `monthNet = receitas − despesas` (resultado do mês).
   - Cartões: `cards.openInvoices` traz o total e o detalhe por cartão das faturas com

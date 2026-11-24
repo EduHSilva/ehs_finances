@@ -28,9 +28,16 @@ const links = [[{
     open.value = false
   }
 }, {
-  label: $t('monthlyGoals'),
+  label: $t('navGoals'),
   icon: 'i-lucide-target',
   to: '/goals',
+  onSelect: () => {
+    open.value = false
+  }
+}, {
+  label: $t('investments'),
+  icon: 'i-lucide-trending-up',
+  to: '/investments',
   onSelect: () => {
     open.value = false
   }

@@ -132,16 +132,16 @@ export interface FinancesService {
   reviewImportedTransaction(id: string, review: ReviewImportedTransactionRequest): Promise<DefaultResponse<Transaction | null>>
   getTransactionImportAudit(id: string): Promise<DefaultResponse<TransactionImportAudit[]>>
   confirmRecurrence(id: string, value?: number): Promise<DefaultResponse<Recurrence>>
-  getPending(accountId: string, days?: number): Promise<DefaultResponse<DashboardPending>>
+  getPending(accountId: string, month?: string): Promise<DefaultResponse<DashboardPending>>
   getInvestmentSummary(accountId: string): Promise<DefaultResponse<InvestmentSummary>>
-  getDashboardSummary(accountId: string, days?: number): Promise<DefaultResponse<DashboardSummary>>
+  getDashboardSummary(accountId: string, month?: string): Promise<DefaultResponse<DashboardSummary>>
   getGoals(accountId: string, periodMonth: string): Promise<DefaultResponse<Page<MonthlyGoal>>>
   createGoal(goal: MonthlyGoalRequest): Promise<DefaultResponse<MonthlyGoal>>
   updateGoal(id: string, goal: MonthlyGoalRequest): Promise<DefaultResponse<MonthlyGoal>>
   deleteGoal(id: string): Promise<DefaultResponse<void>>
   getGoalSummary(id: string, periodMonth: string): Promise<DefaultResponse<MonthlyGoalSummary>>
   contributeToGoal(id: string, contribution: GoalContribution): Promise<DefaultResponse<void>>
-  getProjection(accountId: string, days?: number): Promise<DefaultResponse<CashflowProjection>>
+  getProjection(accountId: string, month?: string): Promise<DefaultResponse<CashflowProjection>>
   getAccountMembers(accountId: string): Promise<DefaultResponse<AccountMembers>>
   inviteAccountMember(accountId: string, email: string): Promise<DefaultResponse<AccountMember>>
   resendAccountInvite(accountId: string, memberId: string): Promise<DefaultResponse<AccountMember>>
@@ -280,17 +280,17 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
     contributeToGoal: (id, contribution) => apiFetch(`${baseUrl}goals/${id}/contributions`, {
       headers: authHeaders(), method: 'POST', body: contribution
     }),
-    getProjection: (accountId, days = 90) => apiFetch(`${baseUrl}dashboard/projection`, {
-      headers: authHeaders(), query: { accountId, days }
+    getProjection: (accountId, month) => apiFetch(`${baseUrl}dashboard/projection`, {
+      headers: authHeaders(), query: { accountId, month }
     }),
-    getPending: (accountId, days = 30) => apiFetch(`${baseUrl}dashboard/pending`, {
-      headers: authHeaders(), query: { accountId, days }
+    getPending: (accountId, month) => apiFetch(`${baseUrl}dashboard/pending`, {
+      headers: authHeaders(), query: { accountId, month }
     }),
     getInvestmentSummary: accountId => apiFetch(`${baseUrl}dashboard/investments`, {
       headers: authHeaders(), query: { accountId }
     }),
-    getDashboardSummary: (accountId, days = 90) => apiFetch(`${baseUrl}dashboard/summary`, {
-      headers: authHeaders(), query: { accountId, days }
+    getDashboardSummary: (accountId, month) => apiFetch(`${baseUrl}dashboard/summary`, {
+      headers: authHeaders(), query: { accountId, month }
     }),
     getAccountMembers: accountId => apiFetch(`${baseUrl}accounts/${accountId}/members`, {
       headers: authHeaders()

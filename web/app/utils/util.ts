@@ -1,5 +1,3 @@
-import { parseDate } from '@internationalized/date'
-
 export function getTokenCookie() {
   // Persistente: sem maxAge o cookie morria ao fechar o navegador. A validade real
   // da sessão é a do JWT, renovada por `/users/auth/me` a cada carregamento.
@@ -31,6 +29,6 @@ export function toExecutionDate(value: { toString(): string } | Date) {
 }
 
 export function parseLocalDate(value: string) {
-  const datePart = /^(\d{4}-\d{2}-\d{2})/.exec(value)?.[1]
-  return parseDate(datePart || value.slice(0, 10))
+  const [year, month, day] = (/^(\d{4}-\d{2}-\d{2})/.exec(value)?.[1] || value.slice(0, 10)).split('-').map(Number)
+  return new Date(year!, month! - 1, day!)
 }

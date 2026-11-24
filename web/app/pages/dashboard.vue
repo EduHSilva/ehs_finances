@@ -13,8 +13,25 @@ const recurrences = ref<Recurrence[]>([])
 const pending = ref<DashboardPending | null>(null)
 const loading = ref(false)
 const error = ref(false)
-const days = ref(30)
-const dayOptions = [30, 90, 180].map(value => ({ label: t('daysValue', { count: value }), value }))
+
+function monthKeyOf(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
+const selectedMonth = ref(monthKeyOf(new Date()))
+const monthOptions = computed(() => {
+  const now = new Date()
+  const formatter = new Intl.DateTimeFormat(locale.value === 'pt' ? 'pt-BR' : 'en-US', { month: 'long', year: 'numeric' })
+  return Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() + index, 1)
+    const label = formatter.format(date)
+    return { label: label.charAt(0).toUpperCase() + label.slice(1), value: monthKeyOf(date) }
+  })
+})
+const horizonEnd = computed(() => {
+  const [year, month] = selectedMonth.value.split('-').map(Number)
+  return new Date(year!, month!, 0)
+})
 
 function projectionKindLabel(kind: string) {
   const key = `projectionKind.${kind.toLowerCase()}`
@@ -96,10 +113,10 @@ async function refreshProjection() {
   try {
     const accountId = activeAccount.value.id
     const [projectionResponse, recurrenceResponse, pendingResponse, summaryResponse] = await Promise.all([
-      $financesService.getProjection(accountId, days.value),
+      $financesService.getProjection(accountId, selectedMonth.value),
       $financesService.getRecurrences(accountId).catch(() => null),
-      $financesService.getPending(accountId, days.value).catch(() => null),
-      $financesService.getDashboardSummary(accountId, days.value).catch(() => null)
+      $financesService.getPending(accountId, selectedMonth.value).catch(() => null),
+      $financesService.getDashboardSummary(accountId, selectedMonth.value).catch(() => null)
     ])
     projection.value = projectionResponse.data
     recurrences.value = recurrenceResponse?.data.items || []
@@ -124,7 +141,7 @@ async function confirmPending(item: PendingItem) {
   }
 }
 
-watch(() => [activeAccount.value?.id, days.value], refreshProjection, { immediate: true })
+watch(() => [activeAccount.value?.id, selectedMonth.value], refreshProjection, { immediate: true })
 
 onMounted(async () => {
   try {
@@ -144,9 +161,9 @@ onMounted(async () => {
           <div class="flex w-full items-center justify-between gap-3">
             <span class="text-sm text-muted">{{ $t('projectionTitle') }}</span>
             <USelect
-              v-model="days"
-              :items="dayOptions"
-              class="w-36"
+              v-model="selectedMonth"
+              :items="monthOptions"
+              class="w-44"
             />
           </div>
         </UDashboardToolbar>
@@ -196,7 +213,7 @@ onMounted(async () => {
               </div>
               <div class="text-left sm:text-right">
                 <p class="text-xs font-medium tracking-wide text-muted uppercase">
-                  {{ $t('netWorthProjected', { days }) }}
+                  {{ $t('projectedUntil', { date: formatDate(horizonEnd) }) }}
                 </p>
                 <p class="mt-1 text-xl font-semibold tabular-nums text-primary">
                   {{ formatCurrency(summary?.netWorth.projected ?? projection.closingBalance) }}

@@ -19,9 +19,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 
 data class DashboardUiState(
-    val days: Int = 30,
+    val month: YearMonth = YearMonth.now(),
     val loading: Boolean = false,
     val refreshing: Boolean = false,
     val error: String? = null,
@@ -46,23 +48,23 @@ class DashboardViewModel(
     private val _message = MutableStateFlow<UiMessage?>(null)
     val message: StateFlow<UiMessage?> = _message.asStateFlow()
 
-    private val days = MutableStateFlow(30)
+    private val month = MutableStateFlow(YearMonth.now())
     private val reload = MutableStateFlow(0)
 
     init {
         viewModelScope.launch {
-            combine(financeState.activeAccount, days, reload) { account, horizon, _ ->
-                account to horizon
-            }.collectLatest { (account, horizon) ->
-                load(account?.id, horizon)
+            combine(financeState.activeAccount, month, reload) { account, selectedMonth, _ ->
+                account to selectedMonth
+            }.collectLatest { (account, selectedMonth) ->
+                load(account?.id, selectedMonth)
             }
         }
     }
 
-    fun setDays(value: Int) {
-        if (value !in HORIZONS) return
-        _state.value = _state.value.copy(days = value)
-        days.value = value
+    fun setMonth(value: YearMonth) {
+        if (value.isBefore(YearMonth.now())) return
+        _state.value = _state.value.copy(month = value)
+        month.value = value
     }
 
     fun refresh() {
@@ -97,9 +99,10 @@ class DashboardViewModel(
         }
     }
 
-    private suspend fun load(accountId: String?, horizon: Int) {
+    private suspend fun load(accountId: String?, selectedMonth: YearMonth) {
         if (accountId == null) {
             _state.value = _state.value.copy(
+                month = selectedMonth,
                 loading = false,
                 refreshing = false,
                 error = null,
@@ -111,16 +114,17 @@ class DashboardViewModel(
             return
         }
 
+        val monthKey = selectedMonth.format(MONTH_KEY)
         _state.value = _state.value.copy(
             loading = !_state.value.refreshing,
             error = null,
-            days = horizon,
+            month = selectedMonth,
         )
         try {
             coroutineScope {
-                val projectionDeferred = async { repository.projection(accountId, horizon) }
-                val summaryDeferred = async { runCatching { repository.summary(accountId, horizon) }.getOrNull() }
-                val pendingDeferred = async { runCatching { repository.pending(accountId, horizon) }.getOrNull() }
+                val projectionDeferred = async { repository.projection(accountId, monthKey) }
+                val summaryDeferred = async { runCatching { repository.summary(accountId, monthKey) }.getOrNull() }
+                val pendingDeferred = async { runCatching { repository.pending(accountId, monthKey) }.getOrNull() }
                 val recurrencesDeferred = async { runCatching { repository.recurrences(accountId) }.getOrDefault(emptyList()) }
 
                 val projection = projectionDeferred.await()
@@ -145,6 +149,12 @@ class DashboardViewModel(
     }
 
     companion object {
-        val HORIZONS = listOf(30, 90, 180)
+        private val MONTH_KEY = DateTimeFormatter.ofPattern("yyyy-MM")
+
+        /** Meses selecionáveis: o atual e os próximos (sem meses passados). */
+        fun monthOptions(count: Int = 6): List<YearMonth> {
+            val current = YearMonth.now()
+            return (0 until count).map { current.plusMonths(it.toLong()) }
+        }
     }
 }

@@ -167,13 +167,13 @@ interface FinancesApi {
     @GET("finances/dashboard/projection")
     suspend fun projection(
         @Query("accountId") accountId: String,
-        @Query("days") days: Int,
+        @Query("month") month: String,
     ): Envelope<CashflowProjectionDto>
 
     @GET("finances/dashboard/pending")
     suspend fun pending(
         @Query("accountId") accountId: String,
-        @Query("days") days: Int,
+        @Query("month") month: String,
     ): Envelope<DashboardPendingDto>
 
     @GET("finances/dashboard/investments")
@@ -184,7 +184,7 @@ interface FinancesApi {
     @GET("finances/dashboard/summary")
     suspend fun summary(
         @Query("accountId") accountId: String,
-        @Query("days") days: Int,
+        @Query("month") month: String,
     ): Envelope<DashboardSummaryDto>
 
     @GET("finances/accounts/{accountId}/members")

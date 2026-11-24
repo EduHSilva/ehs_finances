@@ -23,7 +23,7 @@ const schema = z.object({
   categoryID: z.string().optional(),
   income: z.boolean().default(false),
   pending: z.boolean().default(false),
-  executionDate: z.any(),
+  executionDate: z.date().optional(),
   creditCardId: z.string().optional()
 })
 
@@ -162,7 +162,8 @@ function resetState() {
     categoryID: undefined,
     income: false,
     pending: false,
-    executionDate: undefined,
+    // Novo lançamento já vem com a data de hoje; o calendário fica ao lado do campo.
+    executionDate: new Date(),
     creditCardId: undefined
   })
 }
@@ -274,7 +275,7 @@ defineExpose({ openModal, closeModal })
           :label="$t('executionDate')"
           name="executionDate"
         >
-          <UInputDate
+          <DateField
             v-model="state.executionDate"
             :locale="localeTag"
           />

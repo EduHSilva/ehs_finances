@@ -26,14 +26,8 @@ const loading = ref(false)
 const error = ref(false)
 const saving = ref(false)
 
+const paymentState = reactive<{ amount?: number, date?: Date }>({ amount: undefined, date: undefined })
 const paymentOpen = ref(false)
-type PaymentDate = any // eslint-disable-line @typescript-eslint/no-explicit-any
-
-const paymentState = reactive<{ amount?: number, date?: PaymentDate }>({ amount: undefined, date: undefined })
-const paymentDateValue = computed({
-  get: () => paymentState.date,
-  set: (value: PaymentDate) => { paymentState.date = value ?? undefined }
-})
 
 const deletePaymentRef = ref<InstanceType<typeof DeleteConfirmModal> | null>(null)
 
@@ -440,10 +434,9 @@ defineExpose({ openModal, closeModal })
           :label="$t('date')"
           required
         >
-          <UInputDate
-            :model-value="paymentDateValue"
+          <DateField
+            v-model="paymentState.date"
             :locale="numberLocale"
-            @update:model-value="value => paymentState.date = value ?? undefined"
           />
         </UFormField>
         <p class="text-xs text-muted">

@@ -476,20 +476,20 @@ class FinancesRepository(private val api: FinancesApi) {
 
     // ----- Painel -----------------------------------------------------------
 
-    suspend fun projection(accountId: String, days: Int): CashflowProjection = apiCall {
-        api.projection(accountId, days).unwrap().toModel()
+    suspend fun projection(accountId: String, month: String): CashflowProjection = apiCall {
+        api.projection(accountId, month).unwrap().toModel()
     }
 
-    suspend fun pending(accountId: String, days: Int): DashboardPending = apiCall {
-        api.pending(accountId, days).unwrap().toModel()
+    suspend fun pending(accountId: String, month: String): DashboardPending = apiCall {
+        api.pending(accountId, month).unwrap().toModel()
     }
 
     suspend fun investments(accountId: String): InvestmentSummary = apiCall {
         api.investments(accountId).unwrap().toModel()
     }
 
-    suspend fun summary(accountId: String, days: Int): DashboardSummary = apiCall {
-        api.summary(accountId, days).unwrap().toModel()
+    suspend fun summary(accountId: String, month: String): DashboardSummary = apiCall {
+        api.summary(accountId, month).unwrap().toModel()
     }
 
     // ----- Membros e convites da conta ---------------------------------------
