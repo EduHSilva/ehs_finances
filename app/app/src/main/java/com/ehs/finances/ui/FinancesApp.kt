@@ -1,49 +1,69 @@
 package com.ehs.finances.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.ManageAccounts
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,6 +80,7 @@ import com.ehs.finances.core.i18n.Strings
 import com.ehs.finances.core.settings.AppTheme
 import com.ehs.finances.core.settings.LocalAppSettings
 import com.ehs.finances.core.ui.LocalSnackbarHost
+import com.ehs.finances.core.ui.components.InitialAvatar
 import com.ehs.finances.core.ui.components.SettingsActions
 import com.ehs.finances.core.ui.theme.FinancesTheme
 import com.ehs.finances.data.model.FinancialAccount
@@ -77,6 +98,7 @@ import com.ehs.finances.feature.recurrences.RecurrencesScreen
 import com.ehs.finances.feature.transactions.StatementImportScreen
 import com.ehs.finances.feature.transactions.TransactionsScreen
 import com.ehs.finances.feature.transfers.TransfersScreen
+import kotlinx.coroutines.launch
 
 private object Routes {
     const val DASHBOARD = "dashboard"
@@ -108,6 +130,8 @@ private val tabs = listOf(
     Tab(Routes.GOALS, "goals", Icons.Filled.Flag),
     Tab(Routes.INVESTMENTS, "investments", Icons.Filled.TrendingUp),
 )
+
+private val drawerDestinations = tabs + Tab(Routes.PROFILE, "profile", Icons.Filled.ManageAccounts)
 
 /** Raiz do app: aplica tema/idioma e alterna entre login e área autenticada. */
 @Composable
@@ -146,6 +170,8 @@ fun FinancesApp(container: AppContainer) {
 private fun AuthenticatedApp(container: AppContainer) {
     val navController = rememberNavController()
     val snackbarHostState = remember { SnackbarHostState() }
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val route = backStackEntry?.destination?.route
     val strings = LocalStrings.current
@@ -154,6 +180,10 @@ private fun AuthenticatedApp(container: AppContainer) {
     val activeAccountId by container.financeState.activeAccountId.collectAsStateWithLifecycle()
 
     val showChrome = route == null || tabs.any { it.route == route }
+    val onLogout: () -> Unit = {
+        scope.launch { drawerState.close() }
+        container.authRepository.logout()
+    }
 
     LaunchedEffect(Unit) {
         container.financeState.load()
@@ -162,23 +192,47 @@ private fun AuthenticatedApp(container: AppContainer) {
     }
 
     CompositionLocalProvider(LocalSnackbarHost provides snackbarHostState) {
-        Scaffold(
-            topBar = {
-                if (showChrome) {
-                    AppTopBar(
-                        accounts = accounts,
-                        activeAccountId = activeAccountId,
-                        profileName = session?.user?.name,
-                        onSelectAccount = container.financeState::setActiveAccount,
-                        onOpenProfile = { navController.navigateOnce(Routes.PROFILE) },
-                        onOpenCards = { navController.navigateOnce(Routes.CARDS) },
-                        onOpenTransfers = { navController.navigateOnce(Routes.TRANSFERS) },
-                    )
-                }
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            gesturesEnabled = showChrome && drawerState.isOpen,
+            drawerContent = {
+                FinancesDrawer(
+                    profileName = session?.user?.name,
+                    profileEmail = session?.user?.email,
+                    currentRoute = route,
+                    onNavigate = { destination ->
+                        scope.launch { drawerState.close() }
+                        if (tabs.any { it.route == destination }) {
+                            navController.switchTab(destination)
+                        } else {
+                            navController.navigateOnce(destination)
+                        }
+                    },
+                    onLogout = onLogout,
+                )
             },
+        ) {
+            Scaffold(
+                topBar = {
+                    if (showChrome) {
+                        AppTopBar(
+                            accounts = accounts,
+                            activeAccountId = activeAccountId,
+                            profileName = session?.user?.name,
+                            onOpenMenu = { scope.launch { drawerState.open() } },
+                            onSelectAccount = container.financeState::setActiveAccount,
+                            onOpenProfile = { navController.navigateOnce(Routes.PROFILE) },
+                            onOpenCards = { navController.navigateOnce(Routes.CARDS) },
+                            onOpenTransfers = { navController.navigateOnce(Routes.TRANSFERS) },
+                        )
+                    }
+                },
             bottomBar = {
                 if (showChrome) {
-                    NavigationBar {
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 0.dp,
+                    ) {
                         tabs.forEach { tab ->
                             NavigationBarItem(
                                 selected = route == tab.route,
@@ -192,6 +246,11 @@ private fun AuthenticatedApp(container: AppContainer) {
                                         style = MaterialTheme.typography.labelSmall,
                                     )
                                 },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    indicatorColor = FinancesTheme.colors.primarySoft,
+                                ),
                             )
                         }
                     }
@@ -255,6 +314,162 @@ private fun AuthenticatedApp(container: AppContainer) {
                 }
             }
         }
+        }
+    }
+}
+
+@Composable
+private fun FinancesDrawer(
+    profileName: String?,
+    profileEmail: String?,
+    currentRoute: String?,
+    onNavigate: (String) -> Unit,
+    onLogout: () -> Unit,
+) {
+    val s = LocalStrings.current
+    val colors = FinancesTheme.colors
+
+    ModalDrawerSheet(
+        drawerContainerColor = colors.sidebar,
+        drawerContentColor = Color.White,
+        modifier = Modifier.width(300.dp),
+    ) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(colors.sidebarTop, colors.sidebar),
+                    ),
+                )
+                .padding(20.dp),
+        ) {
+            BrandMark(dark = true)
+            Spacer(Modifier.size(28.dp))
+            drawerDestinations.forEach { destination ->
+                val active = currentRoute == destination.route
+                val rowBrush: Brush = if (active) {
+                    Brush.horizontalGradient(
+                        listOf(
+                            colors.sidebarAccent.copy(alpha = 0.20f),
+                            colors.sidebarAccent.copy(alpha = 0.06f),
+                        ),
+                    )
+                } else {
+                    SolidColor(Color.Transparent)
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(40.dp)
+                        .background(rowBrush, RoundedCornerShape(8.dp))
+                        .clickable { onNavigate(destination.route) }
+                        .padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Box(
+                        Modifier
+                            .width(3.dp)
+                            .height(16.dp)
+                            .background(
+                                if (active) colors.sidebarAccent else Color.Transparent,
+                                RoundedCornerShape(2.dp),
+                            ),
+                    )
+                    Icon(
+                        destination.icon,
+                        contentDescription = null,
+                        tint = if (active) Color.White else colors.sidebarText,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(
+                        s[destination.labelKey],
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (active) Color.White else colors.sidebarText,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Spacer(Modifier.size(4.dp))
+            }
+
+            Spacer(Modifier.weight(1f))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.13f))
+            Spacer(Modifier.size(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                InitialAvatar(
+                    name = profileName.orEmpty(),
+                    size = 38.dp,
+                    background = colors.sidebarAccent,
+                    contentColor = colors.sidebarOnAccent,
+                )
+                Column {
+                    Text(
+                        profileName?.takeIf { it.isNotBlank() } ?: s["profile"],
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        profileEmail?.takeIf { it.isNotBlank() } ?: "—",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.sidebarText,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Spacer(Modifier.size(14.dp))
+            OutlinedButton(
+                onClick = onLogout,
+                modifier = Modifier.fillMaxWidth().height(36.dp),
+                shape = RoundedCornerShape(8.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)),
+                colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(contentColor = colors.sidebarText),
+            ) {
+                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(15.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(s["logoutAction"], style = MaterialTheme.typography.labelSmall)
+            }
+            Spacer(Modifier.size(10.dp))
+            Text(
+                "Desenvolvido por EHS Solutions",
+                style = MaterialTheme.typography.labelSmall,
+                color = colors.sidebarText,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
+        }
+    }
+}
+
+@Composable
+private fun BrandMark(dark: Boolean = false) {
+    val colors = FinancesTheme.colors
+    val badgeColor = if (dark) colors.sidebarAccent else MaterialTheme.colorScheme.primary
+    val badgeContent = if (dark) colors.sidebarOnAccent else MaterialTheme.colorScheme.onPrimary
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .background(badgeColor, RoundedCornerShape(8.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Filled.AccountBalanceWallet,
+                contentDescription = null,
+                tint = badgeContent,
+                modifier = Modifier.size(19.dp),
+            )
+        }
+        Text(
+            text = LocalStrings.current["appName"],
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = if (dark) Color.White else MaterialTheme.colorScheme.onBackground,
+        )
     }
 }
 
@@ -263,6 +478,7 @@ private fun AppTopBar(
     accounts: List<FinancialAccount>,
     activeAccountId: String?,
     profileName: String?,
+    onOpenMenu: () -> Unit,
     onSelectAccount: (String) -> Unit,
     onOpenProfile: () -> Unit,
     onOpenCards: () -> Unit,
@@ -280,6 +496,13 @@ private fun AppTopBar(
                     .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                IconButton(onClick = onOpenMenu) {
+                    Icon(
+                        Icons.Filled.Menu,
+                        contentDescription = LocalStrings.current["menu"],
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
                 AccountMenu(
                     accounts = accounts,
                     activeAccountId = activeAccountId,

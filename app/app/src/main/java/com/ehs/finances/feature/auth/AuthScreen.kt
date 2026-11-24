@@ -32,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -82,22 +83,7 @@ fun AuthScreen() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            Icons.Filled.AccountBalanceWallet,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(22.dp),
-                        )
-                    }
-                    Text(strings["appName"], style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                }
+                BrandMark()
                 SettingsActions()
             }
 
@@ -264,6 +250,34 @@ fun AuthScreen() {
             confirmButton = {
                 TextButton(onClick = vm::dismissRegistered) { Text(strings["loginNow"]) }
             },
+        )
+    }
+}
+
+@Composable
+fun BrandMark(dark: Boolean = false) {
+    val colors = FinancesTheme.colors
+    val badgeColor = if (dark) colors.sidebarAccent else MaterialTheme.colorScheme.primary
+    val badgeContent = if (dark) colors.sidebarOnAccent else MaterialTheme.colorScheme.onPrimary
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(badgeColor, RoundedCornerShape(10.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Filled.AccountBalanceWallet,
+                contentDescription = null,
+                tint = badgeContent,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        Text(
+            text = LocalStrings.current["appName"],
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = if (dark) Color.White else MaterialTheme.colorScheme.onBackground,
         )
     }
 }

@@ -1,4 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { themeStyle } from './app/design-system/tokens'
+
 const publicApiUrl = (globalThis as unknown as {
   process?: { env?: Record<string, string | undefined> }
 }).process?.env?.NUXT_PUBLIC_API_URL
@@ -23,7 +25,20 @@ export default defineNuxtConfig({
   ssr: false,
 
   app: {
-    baseURL: appBaseURL
+    baseURL: appBaseURL,
+    /*
+     * O Nuxt UI injeta `#build/ui.css` (com `@import "tailwindcss"` e os utilitários)
+     * depois do nosso `main.css`, o que faria os ternos padrão do framework vencem
+     * nossos overrides. Por isso os tokens do design system entram aqui, no <head>:
+     * as variáveis `--ui-*`/`--brand-*`/`--color-*` passam a valer na cascata.
+     * A fonte vem de `app/design-system/tokens.ts` (única origem dos hex).
+     */
+    head: {
+      style: [
+        { key: 'design-tokens', innerHTML: themeStyle('light') },
+        { key: 'design-tokens-dark', innerHTML: themeStyle('dark') }
+      ]
+    }
   },
 
   devtools: {

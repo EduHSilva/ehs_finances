@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#4F46E5</color>
-    <color name="window_background">#FAFAFA</color>
+    <!-- Launcher: apenas fallback do adaptive icon (o fundo real é o gradiente do drawable). -->
+    <color name="ic_launcher_background">#1E7A57</color>
+    <!-- Neutros "papel quente" do design system EHS. -->
+    <color name="window_background">#F5F2EA</color>
 </resources>

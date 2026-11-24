@@ -50,6 +50,7 @@ function updateLocale(value: string) {
 <template>
   <UDashboardNavbar
     :title="$t('manageFinances')"
+    class="app-navbar"
     :ui="{ right: 'gap-3' }"
   >
     <template #leading>

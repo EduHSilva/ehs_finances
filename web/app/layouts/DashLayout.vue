@@ -144,8 +144,8 @@ onMounted(async () => {
       v-model:open="open"
       collapsible
       resizable
-      class="bg-elevated/25"
-      :ui="{ footer: 'lg:border-t lg:border-default' }"
+      class="app-sidebar"
+      :ui="{ root: 'app-sidebar', footer: 'lg:border-t' }"
     >
       <template #header>
         <BrandLogo />
@@ -154,7 +154,7 @@ onMounted(async () => {
       <template #default="{ collapsed }">
         <UDashboardSearchButton
           :collapsed="collapsed"
-          class="bg-transparent ring-default"
+          class="app-sidebar-search bg-transparent ring-default"
         />
 
         <UNavigationMenu
@@ -176,7 +176,7 @@ onMounted(async () => {
 
       <template #footer="{ collapsed }">
         <UserMenu :collapsed="collapsed" />
-        <p v-if="!collapsed" class="px-2 pt-2 pb-1 text-[11px] text-muted">Desenvolvido por EHS Solutions</p>
+        <p v-if="!collapsed" class="px-2 pt-2 pb-1 text-[11px] text-(--brand-sidebar-muted)">Desenvolvido por EHS Solutions</p>
       </template>
     </UDashboardSidebar>
 

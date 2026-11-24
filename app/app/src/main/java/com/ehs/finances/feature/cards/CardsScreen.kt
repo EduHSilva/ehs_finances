@@ -334,8 +334,8 @@ private fun CardRow(
             if (!card.isActive) {
                 Tag(
                     text = cardStatusLabel(card.status, strings),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    background = FinancesTheme.colors.warningSoft,
+                    color = FinancesTheme.colors.neutralInk,
+                    background = FinancesTheme.colors.neutralInkSoft,
                 )
             }
         }

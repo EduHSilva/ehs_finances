@@ -31,7 +31,7 @@ const links = [[{
       :ui="{ body: 'lg:py-12' }"
     >
       <template #header>
-        <UDashboardNavbar :title="t('settings')">
+        <UDashboardNavbar :title="t('settings')" class="app-navbar">
           <template #leading>
             <UDashboardSidebarCollapse />
           </template>

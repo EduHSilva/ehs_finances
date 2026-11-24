@@ -85,16 +85,10 @@ fun EntryTypeTag(entryType: String, modifier: androidx.compose.ui.Modifier = and
         "INVOICE_PAYMENT" -> "entryBadgeInvoicePayment"
         else -> return
     }
-    val color = when (entryType.uppercase()) {
-        "CARD" -> primary
-        "TRANSFER" -> colors.warning
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    val background = when (entryType.uppercase()) {
-        "CARD" -> colors.primarySoft
-        "TRANSFER" -> colors.warningSoft
-        else -> colors.primarySoft
-    }
+    // Tipo de recurso = neutro por padrão; só o cartão (accent do produto) ganha cor.
+    val isCard = entryType.uppercase() == "CARD"
+    val color = if (isCard) primary else colors.neutralInk
+    val background = if (isCard) colors.primarySoft else colors.neutralInkSoft
     Tag(text = strings[key], modifier = modifier, color = color, background = background)
 }
 
@@ -102,13 +96,14 @@ fun EntryTypeTag(entryType: String, modifier: androidx.compose.ui.Modifier = and
 fun StatusTag(status: String, modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier) {
     val strings = LocalStrings.current
     val colors = FinancesTheme.colors
+    val primary = MaterialTheme.colorScheme.primary
     val palette = remember(status, colors) {
         when (status.uppercase()) {
-            "OK" -> colors.success to colors.successSoft
-            "PENDING", "REVIEW", "ACTIVE" -> colors.warning to colors.warningSoft
-            "DELAY", "OVERDUE" -> colors.danger to colors.dangerSoft
-            "PAYED" -> colors.success to colors.successSoft
-            else -> colors.danger to colors.subtle
+            "OK", "PAYED" -> colors.success to colors.successSoft
+            "PENDING", "REVIEW" -> colors.warning to colors.warningSoft
+            "DELAY", "OVERDUE", "FAILED", "ERROR" -> colors.danger to colors.dangerSoft
+            "ACTIVE" -> primary to colors.primarySoft
+            else -> colors.neutralInk to colors.neutralInkSoft
         }
     }
     Tag(

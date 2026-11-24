@@ -1,39 +1,153 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss" theme(static);
 @import "@nuxt/ui";
 
-@theme static {
-  --font-sans: 'Inter', sans-serif;
-  --font-display: 'Outfit', sans-serif;
+/*
+ * Redesign "papel quente + headings serifados", accent esmeralda.
+ * Os valores das cores (light/dark, escalas do Nuxt UI e variáveis --ui-*) são
+ * gerados de `app/design-system/tokens.ts` e injetados no <head> por
+ * nuxt.config.ts (`app.head.style`). Aqui ficam só composição/estilo de componentes.
+ */
 
-  /* Brand tokens live here for CSS and in app/design-system/tokens.ts for Nuxt UI config. */
-  --brand-radius: 0.5rem;
-  --brand-primary: #4F46E5;
-  --brand-primary-hover: #4338CA;
-  --brand-primary-soft: #E0E7FF;
-  --brand-accent: #7C3AED;
-  --brand-success: #16A34A;
-  --brand-warning: #D97706;
-  --brand-danger: #DC2626;
+@theme static inline {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Fraunces', 'Georgia', serif;
 
-  --color-green-50: #EFFDF5;
-  --color-green-100: #D9FBE8;
-  --color-green-200: #B3F5D1;
-  --color-green-300: #75EDAE;
-  --color-green-400: #00DC82;
-  --color-green-500: #00C16A;
-  --color-green-600: #00A155;
-  --color-green-700: #007F45;
-  --color-green-800: #016538;
-  --color-green-900: #0A5331;
-  --color-green-950: #052E16;
+  --shadow-paper: var(--brand-shadow);
+  --shadow-pop: var(--brand-shadow-pop);
 }
 
 @layer base {
-  h1,
-  h2,
-  h3 {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  :where(h1, h2, h3) {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
+  }
+
+  ::selection {
+    background: var(--brand-primary-soft);
+    color: var(--color-text);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+  }
+}
+
+/* Sidebar escura com gradiente vertical nos dois temas. */
+@layer components {
+  .app-sidebar {
+    background-color: var(--brand-sidebar);
+    background-image: linear-gradient(176deg, var(--brand-sidebar-top), var(--brand-sidebar) 62%);
+    color: var(--brand-sidebar-text);
+    border-color: color-mix(in srgb, var(--brand-sidebar-text) 8%, transparent) !important;
+  }
+
+  .app-sidebar [data-slot="header"],
+  .app-sidebar [data-slot="body"],
+  .app-sidebar [data-slot="footer"] {
+    color: var(--brand-sidebar-text);
+  }
+
+  /* Divisória do rodapé (footer do UDashboardSidebar) e grupos (UNavigationMenu). */
+  .app-sidebar [data-slot="footer"] {
+    border-color: color-mix(in srgb, var(--brand-sidebar-text) 10%, transparent);
+  }
+
+  .app-sidebar [data-slot="label"],
+  .app-sidebar [data-slot="childLabel"] {
+    color: var(--brand-sidebar-muted);
+  }
+
+  .app-sidebar [data-slot="link"],
+  .app-sidebar [data-slot="childLink"] {
+    color: var(--brand-sidebar-muted);
+    border-radius: 10px;
+    transition: background-color 0.15s, color 0.15s;
+  }
+
+  .app-sidebar [data-slot="link"] [data-slot="linkLeadingIcon"],
+  .app-sidebar [data-slot="childLink"] [data-slot="childLinkIcon"] {
+    color: color-mix(in srgb, var(--brand-sidebar-muted) 85%, transparent);
+    transition: color 0.15s;
+  }
+
+  .app-sidebar [data-slot="link"]:hover,
+  .app-sidebar [data-slot="childLink"]:hover,
+  .app-sidebar [data-slot="link"]:hover::before,
+  .app-sidebar [data-slot="childLink"]:hover::before {
+    color: var(--brand-sidebar-text);
+    background-color: color-mix(in srgb, var(--brand-sidebar-text) 7%, transparent);
+  }
+
+  .app-sidebar [data-slot="link"]:hover [data-slot="linkLeadingIcon"],
+  .app-sidebar [data-slot="childLink"]:hover [data-slot="childLinkIcon"] {
+    color: var(--brand-sidebar-text);
+  }
+
+  /* Item ativo: barra de accent + gradiente suave. */
+  .app-sidebar [data-slot="link"][data-active="true"],
+  .app-sidebar [data-slot="childLink"][data-active="true"],
+  .app-sidebar [data-slot="link"][data-active="true"]::before,
+  .app-sidebar [data-slot="childLink"][data-active="true"]::before {
+    color: var(--brand-sidebar-text);
+  }
+
+  .app-sidebar [data-slot="link"][data-active="true"],
+  .app-sidebar [data-slot="childLink"][data-active="true"] {
+    background-image: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--brand-sidebar-accent) 22%, transparent),
+      color-mix(in srgb, var(--brand-sidebar-accent) 6%, transparent)
+    );
+    font-weight: 600;
+  }
+
+  .app-sidebar [data-slot="link"][data-active="true"]::before,
+  .app-sidebar [data-slot="childLink"][data-active="true"]::before {
+    background-color: color-mix(in srgb, var(--brand-sidebar-accent) 22%, transparent);
+    background-image: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--brand-sidebar-accent) 22%, transparent),
+      color-mix(in srgb, var(--brand-sidebar-accent) 6%, transparent)
+    );
+    box-shadow: inset 2px 0 0 var(--brand-sidebar-accent);
+  }
+
+  .app-sidebar [data-slot="link"][data-active="true"] [data-slot="linkLeadingIcon"],
+  .app-sidebar [data-slot="childLink"][data-active="true"] [data-slot="childLinkIcon"] {
+    color: var(--brand-sidebar-accent);
+  }
+
+  /* Botões da sidebar (colapsar, busca, usuário) na paleta escura. */
+  .app-sidebar button {
+    color: var(--brand-sidebar-muted);
+  }
+
+  .app-sidebar button:hover {
+    color: var(--brand-sidebar-text);
+  }
+
+  .app-sidebar .app-sidebar-search {
+    color: var(--brand-sidebar-muted) !important;
+  }
+
+  /* Navbar do painel: fundo papel translúcido sobre o conteúdo quente. */
+  .app-navbar {
+    background-color: color-mix(in srgb, var(--color-surface) 86%, transparent);
+    backdrop-filter: blur(10px);
+  }
+
+  /* Login/registro: papel quente com dois halos (accent + warning) bem discretos. */
+  .auth-page {
+    background:
+      radial-gradient(1000px 520px at 10% -10%, color-mix(in srgb, var(--brand-primary-soft) 70%, transparent), transparent 62%),
+      radial-gradient(820px 460px at 100% 0%, color-mix(in srgb, var(--brand-warning-soft) 55%, transparent), transparent 60%),
+      var(--color-bg);
   }
 }

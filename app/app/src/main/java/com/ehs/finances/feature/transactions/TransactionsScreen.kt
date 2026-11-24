@@ -314,7 +314,7 @@ private fun TransactionRow(
     val accent = when {
         transaction.isCard -> MaterialTheme.colorScheme.primary
         transaction.isTransfer -> FinancesTheme.colors.warning
-        transaction.isInvoicePayment -> FinancesTheme.colors.subtle
+        transaction.isInvoicePayment -> FinancesTheme.colors.neutralInk
         transaction.income -> FinancesTheme.colors.success
         else -> FinancesTheme.colors.danger
     }

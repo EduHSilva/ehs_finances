@@ -192,17 +192,13 @@ fun StatementImportScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Tag(state.format.name, color = MaterialTheme.colorScheme.onSurface, background = FinancesTheme.colors.subtle)
+                        Tag(state.format.name)
                         Tag(
                             strings.format("importImportableCount", "count" to state.importable),
                             color = FinancesTheme.colors.success,
                             background = FinancesTheme.colors.successSoft,
                         )
-                        Tag(
-                            strings.format("importDuplicateCount", "count" to state.duplicates),
-                            color = FinancesTheme.colors.warning,
-                            background = FinancesTheme.colors.warningSoft,
-                        )
+                        Tag(strings.format("importDuplicateCount", "count" to state.duplicates))
                         if (state.invalidCount > 0) {
                             Tag(
                                 strings.format("importInvalidCount", "count" to state.invalidCount),
@@ -280,11 +276,7 @@ fun StatementImportScreen(
                         title = strings["importReviewTitle"],
                         subtitle = strings["importReviewHelp"],
                         action = {
-                            Tag(
-                                state.reviewing.size.toString(),
-                                color = FinancesTheme.colors.warning,
-                                background = FinancesTheme.colors.warningSoft,
-                            )
+                            Tag(state.reviewing.size.toString())
                         },
                     )
                 }
@@ -378,11 +370,7 @@ private fun ImportRowCard(
                     color = FinancesTheme.colors.danger,
                     background = FinancesTheme.colors.dangerSoft,
                 )
-                row.duplicate -> Tag(
-                    strings["importLineDuplicate"],
-                    color = FinancesTheme.colors.warning,
-                    background = FinancesTheme.colors.warningSoft,
-                )
+                row.duplicate -> Tag(strings["importLineDuplicate"])
                 else -> Tag(
                     strings["importLineValid"],
                     color = FinancesTheme.colors.success,

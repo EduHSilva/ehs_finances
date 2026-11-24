@@ -45,7 +45,7 @@ fun ContentCard(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, FinancesTheme.colors.border),
     ) {
@@ -158,12 +158,16 @@ fun EmptyNote(text: String, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Etiqueta neutra por padrão (texto muted sobre 6% de tinta); cor só para exceção
+ * (sucesso/warning/danger/erro) ou para o accent do produto.
+ */
 @Composable
 fun Tag(
     text: String,
     modifier: Modifier = Modifier,
-    color: Color = FinancesTheme.colors.danger,
-    background: Color = FinancesTheme.colors.dangerSoft,
+    color: Color = FinancesTheme.colors.neutralInk,
+    background: Color = FinancesTheme.colors.neutralInkSoft,
 ) {
     Box(
         modifier = modifier
@@ -175,17 +179,23 @@ fun Tag(
 }
 
 @Composable
-fun InitialAvatar(name: String, size: Dp = 40.dp, modifier: Modifier = Modifier) {
+fun InitialAvatar(
+    name: String,
+    size: Dp = 40.dp,
+    modifier: Modifier = Modifier,
+    background: Color? = null,
+    contentColor: Color? = null,
+) {
     val initials = rememberInitials(name)
     Box(
         modifier = modifier
             .size(size)
-            .background(MaterialTheme.colorScheme.primary, CircleShape),
+            .background(background ?: MaterialTheme.colorScheme.primary, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = initials,
-            color = MaterialTheme.colorScheme.onPrimary,
+            color = contentColor ?: MaterialTheme.colorScheme.onPrimary,
             style = if (size >= 56.dp) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.labelLarge,
         )
     }
@@ -209,7 +219,7 @@ fun SegmentedToggle(
 ) {
     Row(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.background, RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp))
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {

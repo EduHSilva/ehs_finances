@@ -98,7 +98,7 @@ fun AppTextField(
         isError = isError,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         supportingText = supportingText?.let { { Text(it) } },
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(10.dp),
     )
 }
 
@@ -131,7 +131,7 @@ fun AppPasswordField(
             }
         },
         supportingText = supportingText?.let { { Text(it) } },
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(10.dp),
     )
 }
 
@@ -165,7 +165,7 @@ fun AppDropdown(
             trailingIcon = {
                 Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
             },
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(10.dp),
         )
         Box(
             Modifier
@@ -222,7 +222,7 @@ fun AppDateField(
             singleLine = true,
             label = { Text(label) },
             trailingIcon = { Icon(Icons.Filled.CalendarMonth, contentDescription = null) },
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(10.dp),
         )
         Box(
             Modifier
@@ -294,9 +294,9 @@ fun PrimaryButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(48.dp),
+        modifier = modifier.height(44.dp),
         enabled = enabled && !loading,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(10.dp),
     ) {
         if (loading) {
             CircularProgressIndicator(
@@ -321,7 +321,7 @@ fun SecondaryButton(
         onClick = onClick,
         modifier = modifier.height(44.dp),
         enabled = enabled,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(10.dp),
         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
             containerColor = FinancesTheme.colors.subtle,
             contentColor = MaterialTheme.colorScheme.onSurface,
@@ -383,7 +383,7 @@ fun FormDialog(
                     Button(
                         onClick = onConfirm,
                         enabled = confirmEnabled && !loading,
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(10.dp),
                     ) {
                         if (loading) {
                             CircularProgressIndicator(

@@ -49,7 +49,7 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-elevated/30">
+  <div class="auth-page flex min-h-screen flex-col">
     <header class="flex items-center justify-between px-6 py-4">
       <NuxtLink to="/" aria-label="Finanças">
         <BrandLogo />

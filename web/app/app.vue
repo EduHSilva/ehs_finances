@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { designTokens } from '~/design-system/tokens'
+
 const colorMode = useColorMode()
 const appBase = useRuntimeConfig().app.baseURL
 
-const color = computed(() => colorMode.value === 'dark' ? '#18181B' : '#4F46E5')
+const color = computed(() => colorMode.value === 'dark' ? designTokens.neutrals.dark.bg : designTokens.accents.light.primary)
 
 useHead({
   titleTemplate: (title) => (title ? `${title} · Finanças` : 'Finanças — Controle financeiro'),
