@@ -93,6 +93,15 @@ async function submitGoogle(idToken: string) {
   loading.value = true
   try {
     const response = await $userService.login(null, null, idToken)
+    // Sem token = 202: conta sem acesso ao app, link de confirmação enviado.
+    if (!response.data?.token) {
+      toast.add({
+        title: t('accessEmailSentTitle'),
+        description: response.message || t('accessEmailSent'),
+        color: 'info'
+      })
+      return
+    }
     getTokenCookie().value = { token: response.data.token }
     useUser().value = response.data
     await navigateTo(postLoginRoute())
@@ -137,6 +146,15 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
   loading.value = true
   try {
     const response = await $userService.login(payload.data.email, payload.data.password)
+    // Sem token = 202: conta sem acesso ao app, link de confirmação enviado.
+    if (!response.data?.token) {
+      toast.add({
+        title: $t('accessEmailSentTitle'),
+        description: response.message || $t('accessEmailSent'),
+        color: 'info'
+      })
+      return
+    }
     getTokenCookie().value = { token: response.data.token }
     useUser().value = response.data
     await navigateTo(postLoginRoute())

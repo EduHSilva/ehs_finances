@@ -15,6 +15,72 @@
 
   --shadow-paper: var(--brand-shadow);
   --shadow-pop: var(--brand-shadow-pop);
+
+  /*
+   * Escalas do design system mapeadas para o `@theme` do Tailwind. Sem isto, os
+   * nomes usados em `app.config.ts` (`emerald`, `paper`, `success`, `warning`,
+   * `danger`) não geram utilitários — botões `error`/`success`, badges e o menu
+   * ficam transparentes. As cores vêm das variáveis `--brand-*` injetadas no head.
+   */
+  --color-emerald-50: var(--brand-primary-50);
+  --color-emerald-100: var(--brand-primary-100);
+  --color-emerald-200: var(--brand-primary-200);
+  --color-emerald-300: var(--brand-primary-300);
+  --color-emerald-400: var(--brand-primary-400);
+  --color-emerald-500: var(--brand-primary-500);
+  --color-emerald-600: var(--brand-primary-600);
+  --color-emerald-700: var(--brand-primary-700);
+  --color-emerald-800: var(--brand-primary-800);
+  --color-emerald-900: var(--brand-primary-900);
+  --color-emerald-950: var(--brand-primary-950);
+
+  --color-paper-50: var(--brand-neutral-50);
+  --color-paper-100: var(--brand-neutral-100);
+  --color-paper-200: var(--brand-neutral-200);
+  --color-paper-300: var(--brand-neutral-300);
+  --color-paper-400: var(--brand-neutral-400);
+  --color-paper-500: var(--brand-neutral-500);
+  --color-paper-600: var(--brand-neutral-600);
+  --color-paper-700: var(--brand-neutral-700);
+  --color-paper-800: var(--brand-neutral-800);
+  --color-paper-900: var(--brand-neutral-900);
+  --color-paper-950: var(--brand-neutral-950);
+
+  --color-success-50: var(--brand-success-50);
+  --color-success-100: var(--brand-success-100);
+  --color-success-200: var(--brand-success-200);
+  --color-success-300: var(--brand-success-300);
+  --color-success-400: var(--brand-success-400);
+  --color-success-500: var(--brand-success-500);
+  --color-success-600: var(--brand-success-600);
+  --color-success-700: var(--brand-success-700);
+  --color-success-800: var(--brand-success-800);
+  --color-success-900: var(--brand-success-900);
+  --color-success-950: var(--brand-success-950);
+
+  --color-warning-50: var(--brand-warning-50);
+  --color-warning-100: var(--brand-warning-100);
+  --color-warning-200: var(--brand-warning-200);
+  --color-warning-300: var(--brand-warning-300);
+  --color-warning-400: var(--brand-warning-400);
+  --color-warning-500: var(--brand-warning-500);
+  --color-warning-600: var(--brand-warning-600);
+  --color-warning-700: var(--brand-warning-700);
+  --color-warning-800: var(--brand-warning-800);
+  --color-warning-900: var(--brand-warning-900);
+  --color-warning-950: var(--brand-warning-950);
+
+  --color-danger-50: var(--brand-error-50);
+  --color-danger-100: var(--brand-error-100);
+  --color-danger-200: var(--brand-error-200);
+  --color-danger-300: var(--brand-error-300);
+  --color-danger-400: var(--brand-error-400);
+  --color-danger-500: var(--brand-error-500);
+  --color-danger-600: var(--brand-error-600);
+  --color-danger-700: var(--brand-error-700);
+  --color-danger-800: var(--brand-error-800);
+  --color-danger-900: var(--brand-error-900);
+  --color-danger-950: var(--brand-error-950);
 }
 
 @layer base {
@@ -59,82 +125,10 @@
     border-color: color-mix(in srgb, var(--brand-sidebar-text) 10%, transparent);
   }
 
-  .app-sidebar [data-slot="label"],
-  .app-sidebar [data-slot="childLabel"] {
-    color: var(--brand-sidebar-muted);
-  }
-
   .app-sidebar [data-slot="link"],
   .app-sidebar [data-slot="childLink"] {
-    color: var(--brand-sidebar-muted);
     border-radius: 10px;
     transition: background-color 0.15s, color 0.15s;
-  }
-
-  .app-sidebar [data-slot="link"] [data-slot="linkLeadingIcon"],
-  .app-sidebar [data-slot="childLink"] [data-slot="childLinkIcon"] {
-    color: color-mix(in srgb, var(--brand-sidebar-muted) 85%, transparent);
-    transition: color 0.15s;
-  }
-
-  .app-sidebar [data-slot="link"]:hover,
-  .app-sidebar [data-slot="childLink"]:hover,
-  .app-sidebar [data-slot="link"]:hover::before,
-  .app-sidebar [data-slot="childLink"]:hover::before {
-    color: var(--brand-sidebar-text);
-    background-color: color-mix(in srgb, var(--brand-sidebar-text) 7%, transparent);
-  }
-
-  .app-sidebar [data-slot="link"]:hover [data-slot="linkLeadingIcon"],
-  .app-sidebar [data-slot="childLink"]:hover [data-slot="childLinkIcon"] {
-    color: var(--brand-sidebar-text);
-  }
-
-  /* Item ativo: barra de accent + gradiente suave. */
-  .app-sidebar [data-slot="link"][data-active="true"],
-  .app-sidebar [data-slot="childLink"][data-active="true"],
-  .app-sidebar [data-slot="link"][data-active="true"]::before,
-  .app-sidebar [data-slot="childLink"][data-active="true"]::before {
-    color: var(--brand-sidebar-text);
-  }
-
-  .app-sidebar [data-slot="link"][data-active="true"],
-  .app-sidebar [data-slot="childLink"][data-active="true"] {
-    background-image: linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--brand-sidebar-accent) 22%, transparent),
-      color-mix(in srgb, var(--brand-sidebar-accent) 6%, transparent)
-    );
-    font-weight: 600;
-  }
-
-  .app-sidebar [data-slot="link"][data-active="true"]::before,
-  .app-sidebar [data-slot="childLink"][data-active="true"]::before {
-    background-color: color-mix(in srgb, var(--brand-sidebar-accent) 22%, transparent);
-    background-image: linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--brand-sidebar-accent) 22%, transparent),
-      color-mix(in srgb, var(--brand-sidebar-accent) 6%, transparent)
-    );
-    box-shadow: inset 2px 0 0 var(--brand-sidebar-accent);
-  }
-
-  .app-sidebar [data-slot="link"][data-active="true"] [data-slot="linkLeadingIcon"],
-  .app-sidebar [data-slot="childLink"][data-active="true"] [data-slot="childLinkIcon"] {
-    color: var(--brand-sidebar-accent);
-  }
-
-  /* Botões da sidebar (colapsar, busca, usuário) na paleta escura. */
-  .app-sidebar button {
-    color: var(--brand-sidebar-muted);
-  }
-
-  .app-sidebar button:hover {
-    color: var(--brand-sidebar-text);
-  }
-
-  .app-sidebar .app-sidebar-search {
-    color: var(--brand-sidebar-muted) !important;
   }
 
   /* Navbar do painel: fundo papel translúcido sobre o conteúdo quente. */
@@ -150,4 +144,87 @@
       radial-gradient(820px 460px at 100% 0%, color-mix(in srgb, var(--brand-warning-soft) 55%, transparent), transparent 60%),
       var(--color-bg);
   }
+}
+
+/*
+ * Cores do menu da sidebar fora de `@layer`: o UNavigationMenu aplica utilitários
+ * (`text-muted`, `text-highlighted`, `text-primary` no ativo, `hover:before:bg-elevated`)
+ * na camada `utilities`, que sempre vence a camada `components` — sem isto o menu
+ * claro fica com links marrons sobre o verde e o item ativo quase invisível.
+ * O Nuxt UI marca o item ativo com `data-active` vazio (não `"true"`).
+ */
+.app-sidebar [data-slot="label"],
+.app-sidebar [data-slot="childLabel"] {
+  color: var(--brand-sidebar-muted);
+}
+
+.app-sidebar [data-slot="link"],
+.app-sidebar [data-slot="childLink"] {
+  color: var(--brand-sidebar-muted);
+}
+
+.app-sidebar [data-slot="link"] [data-slot="linkLeadingIcon"],
+.app-sidebar [data-slot="childLink"] [data-slot="childLinkIcon"] {
+  color: color-mix(in srgb, var(--brand-sidebar-muted) 85%, transparent);
+  transition: color 0.15s;
+}
+
+.app-sidebar [data-slot="link"]:hover,
+.app-sidebar [data-slot="childLink"]:hover,
+.app-sidebar [data-slot="link"]:hover::before,
+.app-sidebar [data-slot="childLink"]:hover::before {
+  color: var(--brand-sidebar-text);
+  background-color: color-mix(in srgb, var(--brand-sidebar-text) 7%, transparent);
+}
+
+.app-sidebar [data-slot="link"]:hover [data-slot="linkLeadingIcon"],
+.app-sidebar [data-slot="childLink"]:hover [data-slot="childLinkIcon"] {
+  color: var(--brand-sidebar-text);
+}
+
+/* Item ativo: barra de accent + gradiente suave. */
+.app-sidebar [data-slot="link"]:is([data-active], [aria-current="page"]),
+.app-sidebar [data-slot="childLink"]:is([data-active], [aria-current="page"]),
+.app-sidebar [data-slot="link"]:is([data-active], [aria-current="page"])::before,
+.app-sidebar [data-slot="childLink"]:is([data-active], [aria-current="page"])::before {
+  color: var(--brand-sidebar-text);
+}
+
+.app-sidebar [data-slot="link"]:is([data-active], [aria-current="page"]),
+.app-sidebar [data-slot="childLink"]:is([data-active], [aria-current="page"]) {
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--brand-sidebar-accent) 22%, transparent),
+    color-mix(in srgb, var(--brand-sidebar-accent) 6%, transparent)
+  );
+  font-weight: 600;
+}
+
+.app-sidebar [data-slot="link"]:is([data-active], [aria-current="page"])::before,
+.app-sidebar [data-slot="childLink"]:is([data-active], [aria-current="page"])::before {
+  background-color: color-mix(in srgb, var(--brand-sidebar-accent) 22%, transparent);
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--brand-sidebar-accent) 22%, transparent),
+    color-mix(in srgb, var(--brand-sidebar-accent) 6%, transparent)
+  );
+  box-shadow: inset 2px 0 0 var(--brand-sidebar-accent);
+}
+
+.app-sidebar [data-slot="link"]:is([data-active], [aria-current="page"]) [data-slot="linkLeadingIcon"],
+.app-sidebar [data-slot="childLink"]:is([data-active], [aria-current="page"]) [data-slot="childLinkIcon"] {
+  color: var(--brand-sidebar-accent);
+}
+
+/* Botões da sidebar (colapsar, busca, usuário) na paleta escura. */
+.app-sidebar button {
+  color: var(--brand-sidebar-muted);
+}
+
+.app-sidebar button:hover {
+  color: var(--brand-sidebar-text);
+}
+
+.app-sidebar .app-sidebar-search {
+  color: var(--brand-sidebar-muted) !important;
 }

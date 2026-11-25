@@ -50,14 +50,21 @@ function askDelete(card: CreditCard) {
   })
 }
 
+function deleteErrorText(cause: unknown) {
+  const message = (cause as { data?: { message?: string } }).data?.message || ''
+  if (message.includes('active recurrences')) return t('cardDeleteActiveRecurrences')
+  if (message.includes('open invoices')) return t('cardDeleteOpenInvoices')
+  return t('cardDeleteFailed')
+}
+
 async function removeCard(card: CreditCard) {
   deleting.value = true
   try {
     await $financesService.deleteCard(card.id)
     toast.add({ title: t('cardDeleted'), color: 'success', icon: 'i-lucide-check' })
     await refresh()
-  } catch {
-    toast.add({ title: t('cardDeleteFailed'), color: 'error' })
+  } catch (cause) {
+    toast.add({ title: deleteErrorText(cause), color: 'error' })
   } finally {
     deleting.value = false
   }

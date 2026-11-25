@@ -1,18 +1,48 @@
 <script setup lang="ts">
 import type { FinancePreferences } from '~/types'
 
+const { $financesService } = useNuxtApp()
+const { t } = useI18n()
 const { preferences, loading, saving, load, save } = useFinancePreferences()
+const { activeAccount, loadAccounts } = useFinancialAccounts()
 const showBusinessAccount = ref(true)
+const accountName = ref('')
+const savingAccount = ref(false)
 const toast = useToast()
+
+const isOwner = computed(() => (activeAccount.value?.role ?? 'OWNER') === 'OWNER')
+
+watch(activeAccount, (account) => {
+  accountName.value = account?.name || ''
+}, { immediate: true })
 
 onMounted(async () => {
   try {
-    await load()
+    await Promise.all([load(), loadAccounts()])
     showBusinessAccount.value = preferences.value.showBusinessAccount
   } catch {
-    toast.add({ title: 'Não foi possível carregar as preferências', color: 'error' })
+    toast.add({ title: t('settingsLoadFailed'), color: 'error' })
   }
 })
+
+async function onSaveAccountName() {
+  if (!activeAccount.value || !isOwner.value || savingAccount.value) return
+  const name = accountName.value.trim()
+  if (name.length < 2) {
+    toast.add({ title: t('accountNameInvalid'), color: 'error' })
+    return
+  }
+  savingAccount.value = true
+  try {
+    await $financesService.updateAccount(activeAccount.value.id, { name })
+    await loadAccounts(true)
+    toast.add({ title: t('accountUpdated'), color: 'success', icon: 'i-lucide-check' })
+  } catch {
+    toast.add({ title: t('accountUpdateFailed'), color: 'error' })
+  } finally {
+    savingAccount.value = false
+  }
+}
 
 async function onSave() {
   const updated: FinancePreferences = {
@@ -21,9 +51,9 @@ async function onSave() {
   }
   try {
     await save(updated)
-    toast.add({ title: 'Preferências salvas', color: 'success', icon: 'i-lucide-check' })
+    toast.add({ title: t('preferencesSaved'), color: 'success', icon: 'i-lucide-check' })
   } catch {
-    toast.add({ title: 'Não foi possível salvar as preferências', color: 'error' })
+    toast.add({ title: t('preferencesSaveFailed'), color: 'error' })
   }
 }
 </script>
@@ -31,14 +61,51 @@ async function onSave() {
 <template>
   <div class="space-y-4">
     <UPageCard
-      :title="$t('preferences')"
-      :description="$t('financePreferencesDescription')"
+      :title="t('accountSettings')"
+      :description="t('accountSettingsDescription')"
       variant="naked"
       orientation="horizontal"
       class="mb-4"
     >
       <UButton
-        :label="$t('save')"
+        :label="t('save')"
+        color="primary"
+        class="w-fit lg:ms-auto"
+        :loading="savingAccount"
+        :disabled="!isOwner || savingAccount"
+        @click="onSaveAccountName"
+      />
+    </UPageCard>
+
+    <UPageCard variant="subtle">
+      <UFormField
+        :label="t('accountName')"
+        name="accountName"
+      >
+        <UInput
+          v-model="accountName"
+          :disabled="!isOwner || savingAccount"
+          maxlength="120"
+          class="w-full"
+        />
+      </UFormField>
+      <p
+        v-if="!isOwner"
+        class="mt-2 text-sm text-muted"
+      >
+        {{ t('accountOwnerOnly') }}
+      </p>
+    </UPageCard>
+
+    <UPageCard
+      :title="t('preferences')"
+      :description="t('financePreferencesDescription')"
+      variant="naked"
+      orientation="horizontal"
+      class="mb-4"
+    >
+      <UButton
+        :label="t('save')"
         color="primary"
         class="w-fit lg:ms-auto"
         :loading="saving"
@@ -55,9 +122,9 @@ async function onSave() {
           aria-describedby="show-business-account-description"
         />
         <div class="space-y-1">
-          <div class="font-medium text-highlighted">{{ $t('showBusinessAccount') }}</div>
+          <div class="font-medium text-highlighted">{{ t('showBusinessAccount') }}</div>
           <p id="show-business-account-description" class="text-sm text-muted">
-            {{ $t('showBusinessAccountDescription') }}
+            {{ t('showBusinessAccountDescription') }}
           </p>
         </div>
       </div>

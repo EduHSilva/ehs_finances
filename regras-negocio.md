@@ -26,6 +26,13 @@
 - Cartão de crédito **não** é um tipo de conta e não entra no seletor de conta: é uma
   forma de pagamento vinculada à conta (ver "Cartões de crédito").
 - Não há exclusão de conta (só criação/listagem/consulta). Moeda é fixa em `BRL`.
+- O **proprietário** pode renomear a conta e ajustar o saldo inicial
+  (`PUT /finances/accounts/{id}`; membros recebem 403). O nome antigo costuma vir da
+  conta pessoal criada automaticamente.
+- Primeiro login (cliente web): enquanto a única conta for a pessoal padrão intocada
+  (nome "Conta pessoal", sem saldo inicial e sem movimentação), a UI abre um modal
+  sugerindo o nome do usuário e o saldo inicial; dispensar grava a escolha no
+  `localStorage` e não reabre.
 
 ## Conta compartilhada
 
@@ -38,7 +45,8 @@
   para o usuário logado convidado (id do usuário ou e-mail confirmado no `users`).
   Recusar → `DECLINED`; vencido → `EXPIRED` (avaliado a cada consulta). O proprietário
   pode reenviar (novo token/validade) ou cancelar um convite, e remover um membro
-  `ACTIVE` revoga o acesso.
+  `ACTIVE` revoga o acesso e envia e-mail avisando da remoção (cancelar convite
+  `PENDING` não notifica, pois o convidado nunca teve acesso).
 - Membro `ACTIVE` tem acesso **total** à conta: ver e editar lançamentos, recorrências,
   metas, cartões, transferências, faturas, importação de extrato e painéis.
 - Dados criados por um membro são gravados com o `user_id` do **proprietário**; ao ser
@@ -102,6 +110,9 @@
 - Ciclo: fecha no `closingDay` de cada mês e recebe as compras com data até o fechamento
   (compra no próprio dia entra nele). O vencimento é o primeiro `dueDay` **após** o
   fechamento; a fatura é identificada pelo mês do vencimento (`AAAA-MM`).
+  Exceção de mês curto: quando o `dueDay` é o dia seguinte ao `closingDay` e esse dia não
+  existe no mês (ex.: fecha 28, vence 29 em fevereiro), o vencimento é deslocado para o
+  próprio dia do fechamento — senão dois ciclos cairiam no mesmo mês de fatura.
 - Fatura = compras `CARD` `OK` do ciclo. v1 é só despesa (sem estorno).
 - Pagamento: lançamento `INVOICE_PAYMENT` na conta, sem categoria e `income = false`, na
   data do pagamento. Valor > 0 e ≤ restante; pagamentos parciais são permitidos e o
@@ -113,8 +124,11 @@
 - Excluir um pagamento reabre a fatura e libera a edição das compras do ciclo.
 - Mudar fechamento/vencimento é bloqueado se o cartão já tem pagamento (ciclos históricos
   não são recalculados).
-- Excluir cartão (soft delete) exige fatura sem saldo em aberto. Compras antigas ficam no
-  histórico (relatórios) e nunca mais afetam o caixa.
+- Excluir cartão (soft delete) é bloqueado com `409` e motivo quando: há fatura com
+  saldo em aberto, ou há recorrência `ACTIVE` vinculada ao cartão (as próximas
+  ocorrências ficariam sem fatura pagável). O usuário precisa resolver manualmente —
+  pagar a fatura / remover ou desvincular a recorrência — antes de excluir. Compras
+  antigas ficam no histórico (relatórios) e nunca mais afetam o caixa.
 - Limite é informativo (uso = faturas abertas ÷ limite); não bloqueia compras.
 - Recorrência pode ser vinculada a um cartão da conta; as ocorrências nascem `CARD`
   (ver "Recorrências").

@@ -13,8 +13,14 @@ export interface RegisteredUser {
   status?: string
 }
 
+/** `data: null` no login = 202: e-mail de confirmação de acesso enviado. */
+export interface LoginResponse {
+  data: User | null
+  message?: string
+}
+
 export interface UserService {
-  login(email: string | null, password: string | null, tokenGmail?: string | null): Promise<DefaultResponse<User>>
+  login(email: string | null, password: string | null, tokenGmail?: string | null): Promise<LoginResponse>
   getUser(): Promise<DefaultResponse<User>>
   register(username: string, email: string, password: string): Promise<DefaultResponse<RegisteredUser>>
 }
@@ -22,13 +28,13 @@ export interface UserService {
 export default function userService({ apiUrl }: UserServiceOptions): UserService {
   const baseUrl = String(apiUrl)
   return {
-    login: (email, password, tokenGmail = null) => apiFetch(`${baseUrl}auth/login`, {
+    login: (email, password, tokenGmail = null) => apiFetch<LoginResponse>(`${baseUrl}auth/login`, {
       method: 'POST', body: { email, password, tokenGmail, app: 'FINANCES' }
     }),
-    getUser: () => apiFetch(`${baseUrl}auth/me`, {
+    getUser: () => apiFetch<DefaultResponse<User>>(`${baseUrl}auth/me`, {
       headers: { Authorization: `Bearer ${getTokenCookie().value?.token || ''}` }
     }),
-    register: (username, email, password) => apiFetch(`${baseUrl}auth/register`, {
+    register: (username, email, password) => apiFetch<DefaultResponse<RegisteredUser>>(`${baseUrl}auth/register`, {
       method: 'POST', body: { username, email, password, role: 'FINANCES' }
     })
   }

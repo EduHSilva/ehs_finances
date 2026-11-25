@@ -41,11 +41,6 @@ export default defineAppConfig({
         title: 'text-pretty font-display font-semibold tracking-[-0.01em] text-highlighted'
       }
     },
-    card: {
-      slots: {
-        title: 'font-display font-semibold tracking-[-0.01em] text-highlighted'
-      }
-    },
     pageFeature: {
       slots: {
         title: 'text-pretty font-display font-semibold tracking-[-0.01em] text-highlighted'

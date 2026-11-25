@@ -61,6 +61,11 @@ export interface CreateAccountRequest {
   openingBalance: number
 }
 
+export interface UpdateAccountRequest {
+  name: string
+  openingBalance?: number
+}
+
 export interface StatementImportLineRequest {
   description: string
   amount: number
@@ -114,6 +119,7 @@ export interface FinancesService {
   updatePreferences(preferences: FinancePreferences): Promise<DefaultResponse<FinancePreferences>>
   getAccounts(): Promise<DefaultResponse<FinancialAccount[]>>
   createAccount(account: CreateAccountRequest): Promise<DefaultResponse<FinancialAccount>>
+  updateAccount(id: string, account: UpdateAccountRequest): Promise<DefaultResponse<FinancialAccount>>
   getCategories(): Promise<DefaultResponse<Page<Category>>>
   createCategory(category: Category): Promise<DefaultResponse<Category>>
   deleteCategory(id: string): Promise<DefaultResponse<void>>
@@ -174,6 +180,9 @@ export default function financesService({ apiUrl }: FinancesServiceOptions): Fin
     getAccounts: () => apiFetch(`${baseUrl}accounts`, { headers: authHeaders() }),
     createAccount: account => apiFetch(`${baseUrl}accounts`, {
       headers: authHeaders(), method: 'POST', body: account
+    }),
+    updateAccount: (id, account) => apiFetch(`${baseUrl}accounts/${id}`, {
+      headers: authHeaders(), method: 'PUT', body: account
     }),
     getCategories: () => apiFetch(`${baseUrl}categories?page=0&size=200`, { headers: authHeaders() }),
     createCategory: category => apiFetch(`${baseUrl}categories`, {
